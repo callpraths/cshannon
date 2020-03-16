@@ -24,7 +24,7 @@ fn main() {
                 .help("Output file to (de)compress to")
                 .long_help(
                     "Output file to (de)compress to.
-            Must be different from input file.",
+Must be different from input file.",
                 )
                 .takes_value(true),
         )
@@ -51,6 +51,7 @@ fn inner_main(args: clap::ArgMatches) -> Result<(), String> {
     }?;
     fs::write(output_file, output).map_err(|e| e.to_string())
 }
+
 fn compress(input: &str) -> Result<String, String> {
     println!("Compressing...");
     Ok(input.to_string())
