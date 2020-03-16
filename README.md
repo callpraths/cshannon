@@ -9,7 +9,7 @@ reasonable, and readability is prioritized over efficiency.
 
 * ~~Encode and decode sub-commands added. Encoding, decoding is trivial (input is
   mirrored as output).~~
-  * Integration test added to ensure round-trip results in no-diff.
+  ~~* Integration test added to ensure round-trip results in no-diff.~~
 * Tokenizer: 
   * Input is tokenized into a stream of source language tokens.
     * tokens == {english word, byte, unicode ... (to support hindi)}
