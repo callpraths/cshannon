@@ -1,7 +1,9 @@
 extern crate clap;
 
 use clap::{App, Arg, SubCommand};
+use std::fmt;
 use std::fs;
+use std::hash::Hash;
 
 fn main() {
     let args = App::new("Shannon Coder-Decoder")
@@ -61,3 +63,52 @@ fn decompress(input: &str) -> Result<String, String> {
     println!("Decompressing...");
     Ok(input.to_string())
 }
+
+// Tokens must be usable as keys in std::collections::HashMap
+trait Token: ToString + Eq + std::hash::Hash {
+    // The number of bits of source text contained in this Token.
+    fn bit_count() -> usize;
+}
+
+// We'd like to be able to define a single fn pointer type that returns an
+// Iterator over some type that satisfies Token, but this is not possible yet.
+// https://github.com/rust-lang/rfcs/blob/master/text/1522-conservative-impl-trait.md
+type Tokenizer<'a, I>
+where
+    I: 'a,
+    I: std::iter::Iterator,
+    I::Item: Token,
+= fn(&'a str) -> I;
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct Byte {}
+
+impl std::fmt::Display for Byte {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Ok(())
+    }
+}
+impl Token for Byte {
+    fn bit_count() -> usize {
+        0
+    }
+}
+
+struct ByteStream<'a> {
+    text: &'a str,
+}
+
+impl std::iter::Iterator for ByteStream<'_> {
+    type Item = Byte;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        None
+    }
+}
+
+fn byte_tokenizer<'a>(text: &'a str) -> ByteStream<'a> {
+    ByteStream { text }
+}
+
+// validate types.
+static fn_alias: Tokenizer<ByteStream> = byte_tokenizer;
