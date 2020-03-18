@@ -1,7 +1,7 @@
 use std::fmt;
 use std::hash::Hash;
 
-use crate::tokenizer::generic::{Token, Tokenizer};
+use crate::tokenizer::generic::{Token, TokenStream};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Byte {}
@@ -30,9 +30,4 @@ impl std::iter::Iterator for ByteStream<'_> {
     }
 }
 
-pub fn byte_tokenizer<'a>(text: &'a str) -> ByteStream<'a> {
-    ByteStream { text }
-}
-
-// validate type.
-static TOKENIZER_FN: Tokenizer<ByteStream> = byte_tokenizer;
+impl TokenStream for ByteStream<'_> {}

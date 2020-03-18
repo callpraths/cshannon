@@ -1,3 +1,5 @@
+#![feature(associated_type_bounds)]
+
 extern crate clap;
 
 use clap::{App, Arg, SubCommand};
