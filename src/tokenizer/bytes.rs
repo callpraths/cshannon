@@ -4,29 +4,36 @@ use std::hash::Hash;
 use crate::tokenizer::generic::{Token, TokenStream};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Byte {}
+pub struct Byte(u8);
 
 impl std::fmt::Display for Byte {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(())
+        self.0.fmt(f)
     }
 }
 
 impl Token for Byte {
     fn bit_count() -> usize {
-        0
+        8
     }
 }
 
-pub struct ByteStream<'a> {
-    text: &'a str,
+pub struct ByteStream<'a>(std::str::Bytes<'a>);
+
+impl ByteStream<'_> {
+    pub fn new<'a>(text: &'a str) -> ByteStream<'a> {
+        ByteStream(text.bytes())
+    }
 }
 
 impl std::iter::Iterator for ByteStream<'_> {
     type Item = Byte;
 
     fn next(&mut self) -> Option<Self::Item> {
-        None
+        match self.0.next() {
+            Some(b) => Some(Byte(b)),
+            None => None,
+        }
     }
 }
 
