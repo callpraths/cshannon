@@ -4,4 +4,4 @@ pub trait Token: ToString + Eq + std::hash::Hash {
     fn bit_count() -> usize;
 }
 
-pub trait TokenStream: std::iter::IntoIterator<Item: Token> {}
+pub trait Tokens: std::iter::IntoIterator<Item: Token> {}

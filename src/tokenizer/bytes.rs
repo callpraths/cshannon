@@ -1,7 +1,7 @@
 use std::fmt;
 use std::hash::Hash;
 
-use crate::tokenizer::generic::{Token, TokenStream};
+use crate::tokenizer::generic::{Token, Tokens};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Byte(u8);
@@ -18,15 +18,15 @@ impl Token for Byte {
     }
 }
 
-pub struct ByteStream<'a>(std::str::Bytes<'a>);
+pub struct Bytes<'a>(std::str::Bytes<'a>);
 
-impl ByteStream<'_> {
-    pub fn new<'a>(text: &'a str) -> ByteStream<'a> {
-        ByteStream(text.bytes())
+impl Bytes<'_> {
+    pub fn new<'a>(text: &'a str) -> Bytes<'a> {
+        Bytes(text.bytes())
     }
 }
 
-impl std::iter::Iterator for ByteStream<'_> {
+impl std::iter::Iterator for Bytes<'_> {
     type Item = Byte;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -37,4 +37,4 @@ impl std::iter::Iterator for ByteStream<'_> {
     }
 }
 
-impl TokenStream for ByteStream<'_> {}
+impl Tokens for Bytes<'_> {}
