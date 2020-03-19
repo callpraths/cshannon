@@ -13,7 +13,7 @@ impl std::fmt::Display for Byte {
 }
 
 impl Token for Byte {
-    fn bit_count() -> usize {
+    fn bit_count(&self) -> usize {
         8
     }
 }
