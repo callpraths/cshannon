@@ -1,7 +1,11 @@
-use std::fmt;
-use std::hash::Hash;
+//! bytes module implements tokenization of a string into bytes.
+//!
+//! The stream makes zero copies internally while iterating over the stream.
 
 use crate::tokenizer::generic::{Token, Tokens};
+
+use std::fmt;
+use std::hash::Hash;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Byte(u8);

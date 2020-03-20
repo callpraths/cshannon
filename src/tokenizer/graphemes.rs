@@ -1,3 +1,8 @@
+//! graphemes module implements tokenization of a string into unicode grapheme
+//! clusters.
+//!
+//! The stream makes zero copies internally while iterating over the stream.
+
 use crate::tokenizer::generic::{Token, Tokens};
 
 use unicode_segmentation::{self, UnicodeSegmentation};

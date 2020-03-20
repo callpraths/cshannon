@@ -1,3 +1,10 @@
+//! words module implements tokenization of a string into unicode words.
+//!
+//! Unicode words do not include punctuation marks, spaces etc. Thus, the
+//! original string is not always recoverable by concatenating the tokens.
+//!
+//! The stream makes zero copies internally while iterating over the stream.
+
 use crate::tokenizer::generic::{Token, Tokens};
 
 use unicode_segmentation::{self, UnicodeSegmentation};
