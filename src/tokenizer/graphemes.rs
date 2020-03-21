@@ -39,7 +39,7 @@ impl<'a> Iterator for Graphemes<'a> {
 }
 
 impl<'a> Tokens<'a> for Graphemes<'a> {
-    fn from_str(text: &'a str) -> Self {
+    fn from_text(text: &'a str) -> Self {
         Graphemes(UnicodeSegmentation::graphemes(text, true))
     }
 }

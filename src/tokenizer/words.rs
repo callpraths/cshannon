@@ -41,7 +41,7 @@ impl<'a> Iterator for Words<'a> {
 }
 
 impl<'a> Tokens<'a> for Words<'a> {
-    fn from_str(text: &'a str) -> Words<'a> {
+    fn from_text(text: &'a str) -> Words<'a> {
         Words(UnicodeSegmentation::unicode_words(text))
     }
 }

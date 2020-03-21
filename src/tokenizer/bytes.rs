@@ -36,7 +36,7 @@ impl std::iter::Iterator for Bytes<'_> {
 }
 
 impl<'a> Tokens<'a> for Bytes<'a> {
-    fn from_str(text: &'a str) -> Self {
+    fn from_text(text: &'a str) -> Self {
         Bytes(text.bytes())
     }
 }
