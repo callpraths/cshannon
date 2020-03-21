@@ -9,4 +9,10 @@ pub trait Token: ToString + Eq + std::hash::Hash {
 /// A stream of Tokens corresponding to a raw string input.
 pub trait Tokens<'a>: std::iter::IntoIterator<Item: Token> {
     fn from_text(text: &'a str) -> Self;
+    /// Convert back to text that would tokenize to this Token stream.
+    ///
+    /// Some Tokens may be lossy for specific text. Thus,
+    ///   to_text(from_text(text));
+    /// may not be the same as text.
+    fn to_text(self) -> Result<String, String>;
 }

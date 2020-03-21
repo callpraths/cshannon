@@ -39,4 +39,9 @@ impl<'a> Tokens<'a> for Bytes<'a> {
     fn from_text(text: &'a str) -> Self {
         Bytes(text.bytes())
     }
+    fn to_text(self) -> Result<String, String> {
+        let b: Vec<u8> = self.0.collect();
+        let s = std::str::from_utf8(&b).map_err(|e| e.to_string())?;
+        Ok(s.to_string())
+    }
 }

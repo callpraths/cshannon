@@ -42,4 +42,8 @@ impl<'a> Tokens<'a> for Graphemes<'a> {
     fn from_text(text: &'a str) -> Self {
         Graphemes(UnicodeSegmentation::graphemes(text, true))
     }
+    fn to_text(self) -> Result<String, String> {
+        let s: String = self.0.collect();
+        Ok(s)
+    }
 }
