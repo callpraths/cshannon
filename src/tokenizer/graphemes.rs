@@ -43,7 +43,6 @@ impl<'a> Tokens<'a> for Graphemes<'a> {
         Graphemes(UnicodeSegmentation::graphemes(text, true))
     }
     fn to_text(self) -> Result<String, String> {
-        let s: String = self.0.collect();
-        Ok(s)
+        Ok(self.0.collect())
     }
 }
