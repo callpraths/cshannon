@@ -11,7 +11,7 @@ About my neck was hung.
 ";
 
 #[test]
-fn test_roundrip() {
+fn test_bytes_roundrip() {
     // We freely unwrap() here since this is a simplistic integration test.
     let work_dir = tempfile::tempdir().unwrap();
     let input_file = work_dir.path().join("input.txt");
@@ -25,6 +25,8 @@ fn test_roundrip() {
             input_file.to_str().unwrap(),
             "-o",
             compressed_file.to_str().unwrap(),
+            "-t",
+            "byte",
             "compress",
         ])
         .status()
@@ -35,6 +37,8 @@ fn test_roundrip() {
             compressed_file.to_str().unwrap(),
             "-o",
             decompressed_file.to_str().unwrap(),
+            "-t",
+            "byte",
             "decompress",
         ])
         .status()
