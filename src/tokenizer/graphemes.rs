@@ -27,12 +27,6 @@ impl Token for Grapheme<'_> {
 
 pub struct Graphemes<'a>(unicode_segmentation::Graphemes<'a>);
 
-impl Graphemes<'_> {
-    pub fn new<'a>(text: &'a str) -> Graphemes<'a> {
-        Graphemes(UnicodeSegmentation::graphemes(text, true))
-    }
-}
-
 impl<'a> Iterator for Graphemes<'a> {
     type Item = Grapheme<'a>;
 
@@ -44,4 +38,8 @@ impl<'a> Iterator for Graphemes<'a> {
     }
 }
 
-impl Tokens for Graphemes<'_> {}
+impl<'a> Tokens<'a> for Graphemes<'a> {
+    fn from_str(text: &'a str) -> Self {
+        Graphemes(UnicodeSegmentation::graphemes(text, true))
+    }
+}

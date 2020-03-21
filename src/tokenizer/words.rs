@@ -29,12 +29,6 @@ impl Token for Word<'_> {
 
 pub struct Words<'a>(unicode_segmentation::UnicodeWords<'a>);
 
-impl Words<'_> {
-    pub fn new<'a>(text: &'a str) -> Words<'a> {
-        Words(UnicodeSegmentation::unicode_words(text))
-    }
-}
-
 impl<'a> Iterator for Words<'a> {
     type Item = Word<'a>;
 
@@ -46,4 +40,8 @@ impl<'a> Iterator for Words<'a> {
     }
 }
 
-impl Tokens for Words<'_> {}
+impl<'a> Tokens<'a> for Words<'a> {
+    fn from_str(text: &'a str) -> Words<'a> {
+        Words(UnicodeSegmentation::unicode_words(text))
+    }
+}

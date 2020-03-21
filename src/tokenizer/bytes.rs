@@ -24,12 +24,6 @@ impl Token for Byte {
 
 pub struct Bytes<'a>(std::str::Bytes<'a>);
 
-impl Bytes<'_> {
-    pub fn new<'a>(text: &'a str) -> Bytes<'a> {
-        Bytes(text.bytes())
-    }
-}
-
 impl std::iter::Iterator for Bytes<'_> {
     type Item = Byte;
 
@@ -41,4 +35,8 @@ impl std::iter::Iterator for Bytes<'_> {
     }
 }
 
-impl Tokens for Bytes<'_> {}
+impl<'a> Tokens<'a> for Bytes<'a> {
+    fn from_str(text: &'a str) -> Self {
+        Bytes(text.bytes())
+    }
+}
