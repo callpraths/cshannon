@@ -7,6 +7,7 @@ use clap::{App, Arg, SubCommand};
 use std::fs;
 
 pub mod tokenizer;
+pub mod model;
 
 use tokenizer::bytes::Bytes;
 use tokenizer::generic::Tokens;
