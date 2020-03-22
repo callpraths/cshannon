@@ -59,7 +59,7 @@ Must be different from input file.",
 
     match inner_main(args) {
         Ok(()) => println!("Success"),
-        Err(err) => println!("Error: {}", err),
+        Err(err) => panic!("Error: {}", err),
     }
 }
 
@@ -74,7 +74,7 @@ fn inner_main(args: clap::ArgMatches) -> Result<(), String> {
         Some("compress") => match tokenizer_choice {
             "byte" => compress::<Bytes>(&input),
             "grapheme" => compress::<Graphemes>(&input),
-            "words" => compress::<Words>(&input),
+            "word" => compress::<Words>(&input),
             _ => Err(format!("invalid tokenizer {}", tokenizer_choice)),
         },
         Some("decompress") => decompress(&input),

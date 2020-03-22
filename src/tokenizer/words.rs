@@ -45,6 +45,6 @@ impl<'a> Tokens<'a> for Words<'a> {
         Words(UnicodeSegmentation::unicode_words(text))
     }
     fn to_text(self) -> Result<String, String> {
-        Ok(self.0.map(|s| s.to_owned()).collect())
+        Ok(self.0.map(|s| s.to_owned()).collect::<Vec<String>>().join(" "))
     }
 }
