@@ -1,45 +1,60 @@
-
-use crate::tokenizer::generic::{Token, Tokens};
-
 use std::collections::HashMap;
 
-pub struct Model<T: Token> {
-    fs: HashMap<T, i64>,
-    ps: HashMap<T, f64>,
+pub struct Model<T: Eq + std::hash::Hash>(HashMap<T, Stats>);
+
+pub struct Stats {
+    f: i64,
+    p: f64,
 }
 
-impl<T: Token> Model<T> {
-    pub fn f(&self, t: T) -> i64 {
-        match self.fs.get(&t) {
-            Some(&f) => f,
+impl<T: Eq + std::hash::Hash> Model<T> {
+    pub fn f(&self, t: &T) -> i64 {
+        match self.0.get(t) {
+            Some(s) => s.f,
             None => 0,
         }
     }
 
-    pub fn p(&self, t: T) -> f64 {
-        match self.ps.get(&t) {
-            Some(&p) => p,
+    pub fn p(&self, t: &T) -> f64 {
+        match self.0.get(t) {
+            Some(s) => s.p,
             None => 0.0,
         }
     }
 }
 
-pub fn build_from<'a, T, TS>(ts: TS) -> Model<T>
-where T: Token, TS: Tokens<'a, Item=T> {
-    let mut m = Model::<T>{
-        fs: HashMap::new(),
-        ps: HashMap::new(),
-    };
+pub fn from<T, TS>(ts: TS) -> Model<T>
+where
+    T: Eq + std::hash::Hash,
+    TS: std::iter::IntoIterator<Item = T>,
+{
+    let mut m = Model::<T>(HashMap::new());
     let mut d: i64 = 0;
     for t in ts {
-        match m.fs.get(&t) {
-            Some(&f) => m.fs.insert(t, f + 1),
-            None => m.fs.insert(t, 1),
-        };
-        d = d + 1;
+        let s = m.0.entry(t).or_insert(Stats { f: 0, p: 0.0 });
+        (*s).f += 1;
+        d += 1;
     }
-    for (t, f) in m.fs.iter() {
-        m.ps.insert(*t, (*f as f64)/(d as f64));
+    for (_, s) in &mut m.0 {
+        (*s).p = ((*s).f as f64) / (d as f64);
     }
     m
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic() {
+        let tokens = vec![2, 3, 1, 2, 5, 11];
+        let m = from(tokens);
+        assert_eq!(m.f(&1), 1);
+        assert_eq!(m.f(&2), 2);
+        assert_eq!(m.f(&13), 0);
+
+        // f64 equality is inexact.
+        assert!(m.p(&5) > 0.166);
+        assert!(m.p(&5) < 0.167);
+    }
 }
