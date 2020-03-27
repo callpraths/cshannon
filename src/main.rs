@@ -6,13 +6,13 @@ use clap::{App, Arg, SubCommand};
 
 use std::fs;
 
-pub mod tokenizer;
 pub mod model;
+pub mod tokenizer;
 
 use tokenizer::bytes::Bytes;
-use tokenizer::generic::Tokens;
 use tokenizer::graphemes::Graphemes;
 use tokenizer::words::Words;
+use tokenizer::Tokens;
 
 fn main() {
     let args = App::new("Shannon Coder-Decoder")

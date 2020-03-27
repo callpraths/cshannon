@@ -5,7 +5,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokenizer::generic::{Token, Tokens};
+use crate::tokenizer::{Token, Tokens};
 
 use unicode_segmentation::{self, UnicodeSegmentation};
 
@@ -45,6 +45,10 @@ impl<'a> Tokens<'a> for Words<'a> {
         Words(UnicodeSegmentation::unicode_words(text))
     }
     fn to_text(self) -> Result<String, String> {
-        Ok(self.0.map(|s| s.to_owned()).collect::<Vec<String>>().join(" "))
+        Ok(self
+            .0
+            .map(|s| s.to_owned())
+            .collect::<Vec<String>>()
+            .join(" "))
     }
 }

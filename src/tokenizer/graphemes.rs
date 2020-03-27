@@ -3,7 +3,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokenizer::generic::{Token, Tokens};
+use crate::tokenizer::{Token, Tokens};
 
 use unicode_segmentation::{self, UnicodeSegmentation};
 
