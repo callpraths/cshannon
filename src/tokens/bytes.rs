@@ -2,7 +2,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokenizer::{Token, Tokens};
+use crate::tokens::{Token, Tokens};
 
 use std::fmt;
 use std::hash::Hash;
