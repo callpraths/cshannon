@@ -16,7 +16,8 @@ reasonable, and readability is prioritized over efficiency.
   * ~~Token stream is transformed back to text.~~
 * ~Model builder: Relative frequencies are computed for the input.~
 * Code:
-  * Way to collect code.Text -> vec<u8>
+  * pack(iter over Letters) -> vec<u8>
+  * unpack(Alphabet, vec<u8>) -> iterable over Letters
 * Coder:
   * Create from model (start with trivial code)
   * Serialize to vec<u8>x
