@@ -6,6 +6,7 @@ use clap::{App, Arg, SubCommand};
 
 use std::fs;
 
+pub mod code;
 pub mod model;
 pub mod tokens;
 
