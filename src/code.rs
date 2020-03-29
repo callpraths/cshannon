@@ -19,7 +19,7 @@ impl Alphabet {
     /// Serialize to a stream of bytes.
     ///
     /// Can be deserialized back to an Alphabet with pack().
-    pub fn pack(self) -> std::vec::IntoIter<u8> {
+    pub fn pack(self) -> impl Iterator<Item = u8> {
         Vec::<u8>::new().into_iter()
     }
 
