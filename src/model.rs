@@ -1,21 +1,27 @@
 use std::collections::HashMap;
 
+/// A zeroeth order precomputed model for compression.
+///
+/// The model computes certain Stats on input Tokens that can be useful for
+/// statistical compression techniques.
 pub struct Model<T: Eq + std::hash::Hash>(HashMap<T, Stats>);
 
-pub struct Stats {
+struct Stats {
     f: i64,
     p: f64,
 }
 
 impl<T: Eq + std::hash::Hash> Model<T> {
-    pub fn f(&self, t: &T) -> i64 {
+    /// Frequency of occurrence of the key t.
+    pub fn frequency(&self, t: &T) -> i64 {
         match self.0.get(t) {
             Some(s) => s.f,
             None => 0,
         }
     }
 
-    pub fn p(&self, t: &T) -> f64 {
+    /// Probability of occurrence of the key t.
+    pub fn probability(&self, t: &T) -> f64 {
         match self.0.get(t) {
             Some(s) => s.p,
             None => 0.0,
@@ -23,6 +29,7 @@ impl<T: Eq + std::hash::Hash> Model<T> {
     }
 }
 
+/// Generate a zeroeth order model from the given Tokens.
 pub fn from<T, TS>(ts: TS) -> Model<T>
 where
     T: Eq + std::hash::Hash,
@@ -49,12 +56,12 @@ mod tests {
     fn basic() {
         let tokens = vec![2, 3, 1, 2, 5, 11];
         let m = from(tokens);
-        assert_eq!(m.f(&1), 1);
-        assert_eq!(m.f(&2), 2);
-        assert_eq!(m.f(&13), 0);
+        assert_eq!(m.frequency(&1), 1);
+        assert_eq!(m.frequency(&2), 2);
+        assert_eq!(m.frequency(&13), 0);
 
         // f64 equality is inexact.
-        assert!(m.p(&5) > 0.166);
-        assert!(m.p(&5) < 0.167);
+        assert!(m.probability(&5) > 0.166);
+        assert!(m.probability(&5) < 0.167);
     }
 }
