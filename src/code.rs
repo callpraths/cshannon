@@ -1,62 +1,7 @@
 use bit_vec::BitVec;
 
 /// A Letter represents an indivisible code point.
-///
-/// Letters are essentially bit strings, endowed with useful methods for the
-/// current use-case.
-///
-/// Letters must be built up from scratch by repeatedly adding or extending on
-/// the right.
-#[derive(Clone, Debug)]
-pub struct Letter(BitVec);
-
-impl Letter {
-    /// Seed an empty Letter.
-    pub fn new() -> Self {
-        Letter(BitVec::new())
-    }
-
-    /// Create a new Letter with a new value appended to the right.
-    ///
-    /// Examples:
-    /// ```
-    /// let l = Letter::new();
-    /// let nl = l.add(true);
-    /// assert_eq!(l.to_string(), "");
-    /// assert_eq!(nl.to_string(), "1");
-    /// ```
-    pub fn add(&self, value: bool) -> Self {
-        let mut o = self.0.clone();
-        o.push(value);
-        Letter(o)
-    }
-
-    /// Create a new Letter with a new value appended to the right.
-    ///
-    /// Examples:
-    /// ```
-    /// let l = Letter::new();
-    /// l.extend(true);
-    /// assert_eq!(l.to_string(), "1")
-    /// ```
-    pub fn extend(&mut self, value: bool) {
-        self.0.push(value)
-    }
-}
-
-impl ToString for Letter {
-    fn to_string(&self) -> String {
-        let mut s = String::with_capacity(self.0.len());
-        for v in self.0.iter() {
-            if v {
-                s.push_str("1")
-            } else {
-                s.push_str("0")
-            }
-        }
-        s
-    }
-}
+type Letter = BitVec;
 
 /// Alphabet is an ordered list of unique Letters.
 #[derive(Debug)]
