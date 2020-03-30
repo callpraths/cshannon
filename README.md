@@ -18,6 +18,8 @@ reasonable, and readability is prioritized over efficiency.
 * Code:
   * pack(iter over Letters) -> vec<u8>
   * unpack(Alphabet, vec<u8>) -> iterable over Letters
+* Fix error handling before it's too late.
+  * [failure?](https://github.com/rust-lang-nursery/failure)
 * Coder:
   * Create from model (start with trivial code)
   * Serialize to vec<u8>x
