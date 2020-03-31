@@ -11,9 +11,9 @@ type Letter = BitVec;
 pub struct Alphabet(Vec<Letter>);
 
 impl Alphabet {
-    /// Serialize to a stream of bytes.
+    /// Serialize to a vector of bytes.
     ///
-    /// Can be deserialized back to an Alphabet with pack().
+    /// Can be deserialized back to an Alphabet with unpack().
     pub fn pack(self) -> Vec<u8> {
         let letter_count = self.0.len();
         let letter_size_width = log_2(Alphabet::max_letter_size(&self.0) as u64);
@@ -67,7 +67,7 @@ impl Alphabet {
 }
 
 impl Alphabet {
-    /// Deserialize a stream of bytes generated with pack().
+    /// Deserialize a vector of bytes generated with pack().
     pub fn unpack(data: Vec<u8>) -> Result<Self, String> {
         let mut iter = data.into_iter();
         let letter_count = Alphabet::unpack_usize(&mut iter)?;
