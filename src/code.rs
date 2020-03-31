@@ -1,4 +1,5 @@
 use bit_vec::BitVec;
+use std::convert::TryInto;
 use std::u64;
 use std::usize;
 
@@ -30,22 +31,16 @@ impl Alphabet {
 
 impl Alphabet {
     /// Deserialize a stream of bytes generated with pack().
-    pub fn unpack<T>(data: T) -> Result<Self, String>
-    where
-        T: IntoIterator<Item = u8>,
-    {
+    pub fn unpack(data: Vec<u8>) -> Result<Self, String> {
         let mut iter = data.into_iter();
         let letter_count = Alphabet::unpack_usize(&mut iter)?;
         let size_width = Alphabet::unpack_usize(&mut iter)?;
-        let _sizes = Alphabet::unpack_sizes(&mut iter, letter_count, size_width);
-
-        Err("not implemented".to_owned())
+        let letter_sizes = Alphabet::unpack_sizes(&mut iter, letter_count, size_width)?;
+        let letters = Alphabet::unpack_letters(&mut iter, letter_sizes)?;
+        Ok(Alphabet(letters))
     }
 
-    fn unpack_usize<I>(iter: &mut I) -> Result<usize, String>
-    where
-        I: Iterator<Item = u8>,
-    {
+    fn unpack_usize(iter: &mut std::vec::IntoIter<u8>) -> Result<usize, String> {
         let mut buf: [u8; 8] = [0; 8];
         for i in 0..8 {
             match iter.next() {
@@ -60,14 +55,15 @@ impl Alphabet {
         Ok(c as usize)
     }
 
-    fn unpack_sizes<I>(iter: &mut I, count: usize, width: usize) -> Result<Vec<usize>, String>
-    where
-        I: Iterator<Item = u8>,
-    {
+    fn unpack_sizes(
+        iter: &mut std::vec::IntoIter<u8>,
+        count: usize,
+        width: usize,
+    ) -> Result<Vec<usize>, String> {
         let bit_count = count * width;
         let byte_count = (bit_count - 1) / 8 + 1;
         let mut bytes = Vec::with_capacity(byte_count);
-        for _ in 0..(byte_count) {
+        for _ in 0..byte_count {
             match iter.next() {
                 Some(u) => bytes.push(u),
                 None => return Err("too few elements".to_owned()),
@@ -76,7 +72,35 @@ impl Alphabet {
         let mut bits = BitVec::from_bytes(&bytes);
         let mut sizes = Vec::with_capacity(count);
 
+        assert!(width < 64);
+        for _ in 0..byte_count {
+            assert!(bits.len() > width);
+            let word = bits.split_off(bits.len() - width);
+            assert!(word.len() == width);
+            let buf: [u8; 8] = word.to_bytes().as_slice().try_into().unwrap();
+            let s = u64::from_be_bytes(buf);
+            if s > (usize::max_value() as u64) {
+                return Err(format!("size {} too large", s).to_owned());
+            }
+            sizes.push(s as usize)
+        }
+
         Ok(sizes)
+    }
+
+    fn unpack_letters(
+        iter: &mut std::vec::IntoIter<u8>,
+        sizes: Vec<usize>,
+    ) -> Result<Vec<Letter>, String> {
+        let mut bits = BitVec::from_bytes(&iter.collect::<Vec<u8>>());
+        let mut letters = Vec::with_capacity(sizes.len());
+        for size in sizes.iter() {
+            if bits.len() < *size {
+                return Err("ran out of buts".to_owned());
+            }
+            letters.push(bits.split_off(bits.len() - *size));
+        }
+        Ok(letters)
     }
 }
 
