@@ -186,11 +186,11 @@ fn bitvec_slow_append(v: &mut BitVec, o: &BitVec) {
 }
 
 #[cfg(test)]
-mod test {
+mod alphabet_tests {
     use super::*;
 
     #[test]
-    fn alphabet_roundtrip_trivial() {
+    fn roundtrip_trivial() {
         let a = Alphabet::new(vec![]);
         let packed = a.pack();
         let got = Alphabet::unpack(packed).unwrap();
@@ -198,7 +198,7 @@ mod test {
     }
 
     #[test]
-    fn alphabet_roundtrip_single_letter() {
+    fn roundtrip_single_letter() {
         let v = vec![BitVec::from_bytes(&[0b10000001])];
         let a = Alphabet::new(v.clone());
         let packed = a.pack();
@@ -207,7 +207,7 @@ mod test {
     }
 
     #[test]
-    fn alphabet_roundtrip_single_letter_zeroes() {
+    fn roundtrip_single_letter_zeroes() {
         let v = vec![BitVec::from_bytes(&[0])];
         let a = Alphabet::new(v.clone());
         let packed = a.pack();
@@ -215,7 +215,7 @@ mod test {
         assert_eq!(got.0, v);
     }
     #[test]
-    fn alphabet_roundtrip_byte_letters() {
+    fn roundtrip_byte_letters() {
         let v = vec![
             BitVec::from_bytes(&[0b10000001]),
             BitVec::from_bytes(&[0b10000000]),
@@ -228,7 +228,7 @@ mod test {
     }
 
     #[test]
-    fn alphabet_roundtrip_large_letters() {
+    fn roundtrip_large_letters() {
         let v = vec![
             BitVec::from_bytes(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99]),
             BitVec::from_bytes(&[0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9]),
@@ -240,7 +240,7 @@ mod test {
     }
 
     #[test]
-    fn alphabet_roundtrip_many_letters() {
+    fn roundtrip_many_letters() {
         let v = vec![
             BitVec::from_bytes(&[0x11]),
             BitVec::from_bytes(&[0x12]),
@@ -259,7 +259,7 @@ mod test {
     }
 
     #[test]
-    fn alphabet_roundtrip_different_lengths() {
+    fn roundtrip_different_lengths() {
         let v = vec![
             BitVec::from_bytes(&[0x01]),
             BitVec::from_bytes(&[0xa1, 0xa2]),
