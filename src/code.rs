@@ -27,31 +27,31 @@ impl Alphabet {
         let letter_count = self.0.len();
         let mut data: Vec<u8> = Vec::new();
         data.append(&mut (letter_count as u64).to_be_bytes().to_vec());
-        data.append(&mut Alphabet::pack_sizes(&self.0));
-        data.append(&mut Alphabet::pack_letters(self.0));
+        data.append(&mut self.pack_sizes());
+        data.append(&mut self.pack_letters());
 
         data
     }
 
-    fn pack_sizes(letters: &Vec<Letter>) -> Vec<u8> {
-        let mut sizes = BitVec::with_capacity(64 * letters.len());
-        for l in letters.iter() {
+    fn pack_sizes(&self) -> Vec<u8> {
+        let mut sizes = BitVec::with_capacity(64 * self.0.len());
+        for l in self.0.iter() {
             let size = BitVec::from_bytes(&mut (l.len() as u64).to_be_bytes().to_vec());
             bitvec_slow_append(&mut sizes, &size)
         }
         sizes.to_bytes()
     }
 
-    fn pack_letters(letters: Vec<Letter>) -> Vec<u8> {
-        let mut packed = BitVec::with_capacity(Alphabet::total_size(&letters));
-        for l in letters.into_iter() {
+    fn pack_letters(self) -> Vec<u8> {
+        let mut packed = BitVec::with_capacity(self.total_size());
+        for l in self.0.into_iter() {
             bitvec_slow_append(&mut packed, &l);
         }
         packed.to_bytes()
     }
 
-    fn total_size(letters: &Vec<Letter>) -> usize {
-        letters.iter().fold(0, |s, i| s + i.len())
+    fn total_size(&self) -> usize {
+        self.0.iter().fold(0, |s, i| s + i.len())
     }
 }
 
