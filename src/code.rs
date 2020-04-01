@@ -224,7 +224,52 @@ mod test {
         let a = Alphabet::new(v.clone());
         let packed = a.pack();
         let got = Alphabet::unpack(packed).unwrap();
-        assert_eq!(got.0.len(), 3);
+        assert_eq!(got.0, v);
+    }
+
+    #[test]
+    fn alphabet_roundtrip_large_letters() {
+        let v = vec![
+            BitVec::from_bytes(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99]),
+            BitVec::from_bytes(&[0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9]),
+        ];
+        let a = Alphabet::new(v.clone());
+        let packed = a.pack();
+        let got = Alphabet::unpack(packed).unwrap();
+        assert_eq!(got.0, v);
+    }
+
+    #[test]
+    fn alphabet_roundtrip_many_letters() {
+        let v = vec![
+            BitVec::from_bytes(&[0x11]),
+            BitVec::from_bytes(&[0x12]),
+            BitVec::from_bytes(&[0x13]),
+            BitVec::from_bytes(&[0x14]),
+            BitVec::from_bytes(&[0x15]),
+            BitVec::from_bytes(&[0x16]),
+            BitVec::from_bytes(&[0x17]),
+            BitVec::from_bytes(&[0x18]),
+            BitVec::from_bytes(&[0x19]),
+        ];
+        let a = Alphabet::new(v.clone());
+        let packed = a.pack();
+        let got = Alphabet::unpack(packed).unwrap();
+        assert_eq!(got.0, v);
+    }
+
+    #[test]
+    fn alphabet_roundtrip_different_lengths() {
+        let v = vec![
+            BitVec::from_bytes(&[0x01]),
+            BitVec::from_bytes(&[0xa1, 0xa2]),
+            BitVec::from_bytes(&[0xb1, 0xb2, 0xb3]),
+            BitVec::from_bytes(&[0xc1, 0xc2]),
+            BitVec::from_bytes(&[0xd1]),
+        ];
+        let a = Alphabet::new(v.clone());
+        let packed = a.pack();
+        let got = Alphabet::unpack(packed).unwrap();
         assert_eq!(got.0, v);
     }
 }
