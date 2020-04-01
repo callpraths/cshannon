@@ -11,52 +11,41 @@ type Letter = BitVec;
 pub struct Alphabet(Vec<Letter>);
 
 impl Alphabet {
+    /// Create a new Alphabet with the given Letters.Alphabet
+    ///
+    /// The order of Letters is significant. pack()/unpack() conserve the order.
+    pub fn new(letters: Vec<Letter>) -> Self {
+        Alphabet(letters)
+    }
+}
+
+impl Alphabet {
     /// Serialize to a vector of bytes.
     ///
     /// Can be deserialized back to an Alphabet with unpack().
     pub fn pack(self) -> Vec<u8> {
         let letter_count = self.0.len();
-        let letter_size_width = log_2(Alphabet::max_letter_size(&self.0) as u64);
-
         let mut data: Vec<u8> = Vec::new();
         data.append(&mut (letter_count as u64).to_be_bytes().to_vec());
-        data.append(&mut (letter_size_width).to_be_bytes().to_vec());
-        data.append(&mut Alphabet::pack_sizes(
-            letter_size_width as usize,
-            &self.0,
-        ));
+        data.append(&mut Alphabet::pack_sizes(&self.0));
         data.append(&mut Alphabet::pack_letters(self.0));
 
         data
     }
 
-    fn max_letter_size(letters: &Vec<Letter>) -> usize {
-        let mut m = 0;
-        for i in letters.iter() {
-            if i.len() > m {
-                m = i.len();
-            }
-        }
-        m
-    }
-
-    fn pack_sizes(width: usize, letters: &Vec<Letter>) -> Vec<u8> {
-        let mut sizes = BitVec::with_capacity(width * letters.len());
+    fn pack_sizes(letters: &Vec<Letter>) -> Vec<u8> {
+        let mut sizes = BitVec::with_capacity(64 * letters.len());
         for l in letters.iter() {
-            let mut size = l.clone();
-            size.shrink_to_fit();
-            for _ in 0..(width - size.len()) {
-                sizes.push(false);
-            }
-            sizes.append(&mut size);
+            let size = BitVec::from_bytes(&mut (l.len() as u64).to_be_bytes().to_vec());
+            bitvec_slow_append(&mut sizes, &size)
         }
         sizes.to_bytes()
     }
 
     fn pack_letters(letters: Vec<Letter>) -> Vec<u8> {
         let mut packed = BitVec::with_capacity(Alphabet::total_size(&letters));
-        for mut l in letters.into_iter() {
-            packed.append(&mut l)
+        for l in letters.into_iter() {
+            bitvec_slow_append(&mut packed, &l);
         }
         packed.to_bytes()
     }
@@ -71,8 +60,7 @@ impl Alphabet {
     pub fn unpack(data: Vec<u8>) -> Result<Self, String> {
         let mut iter = data.into_iter();
         let letter_count = Alphabet::unpack_usize(&mut iter)?;
-        let size_width = Alphabet::unpack_usize(&mut iter)?;
-        let letter_sizes = Alphabet::unpack_sizes(&mut iter, letter_count, size_width)?;
+        let letter_sizes = Alphabet::unpack_sizes(&mut iter, letter_count)?;
         let letters = Alphabet::unpack_letters(&mut iter, letter_sizes)?;
         Ok(Alphabet(letters))
     }
@@ -92,13 +80,8 @@ impl Alphabet {
         Ok(c as usize)
     }
 
-    fn unpack_sizes(
-        iter: &mut std::vec::IntoIter<u8>,
-        count: usize,
-        width: usize,
-    ) -> Result<Vec<usize>, String> {
-        let bit_count = count * width;
-        let byte_count = (bit_count - 1) / 8 + 1;
+    fn unpack_sizes(iter: &mut std::vec::IntoIter<u8>, count: usize) -> Result<Vec<usize>, String> {
+        let byte_count = count * 8;
         let mut bytes = Vec::with_capacity(byte_count);
         for _ in 0..byte_count {
             match iter.next() {
@@ -109,11 +92,10 @@ impl Alphabet {
         let mut bits = BitVec::from_bytes(&bytes);
         let mut sizes = Vec::with_capacity(count);
 
-        assert!(width < 64);
-        for _ in 0..byte_count {
-            assert!(bits.len() > width);
-            let word = bits.split_off(bits.len() - width);
-            assert!(word.len() == width);
+        for _ in 0..count {
+            assert!(bits.len() >= 64);
+            let word = bits.split_off(bits.len() - 64);
+            assert!(word.len() == 64);
             let buf: [u8; 8] = word.to_bytes().as_slice().try_into().unwrap();
             let s = u64::from_be_bytes(buf);
             if s > (usize::max_value() as u64) {
@@ -137,6 +119,7 @@ impl Alphabet {
             }
             letters.push(bits.split_off(bits.len() - *size));
         }
+        letters.reverse();
         Ok(letters)
     }
 }
@@ -152,16 +135,6 @@ impl Alphabet {
         Text(Vec::new())
     }
 }
-
-const fn num_bits<T>() -> u64 {
-    (std::mem::size_of::<T>() * 8) as u64
-}
-
-fn log_2(x: u64) -> u64 {
-    assert!(x > 0);
-    num_bits::<u64>() - u64::from(x.leading_zeros())
-}
-
 /// An alphabet may be generated from an iterator over Letter.
 ///
 /// This operation clone()s the Letters.
@@ -201,5 +174,57 @@ impl Text {
     /// May be deserialized (with known Alphabet) via Alphabet::parse()
     pub fn pack(self) -> std::vec::IntoIter<u8> {
         Vec::new().into_iter()
+    }
+}
+
+// Can't use BitVec::append() because of
+// https://github.com/contain-rs/bit-vec/issues/63
+fn bitvec_slow_append(v: &mut BitVec, o: &BitVec) {
+    for i in 0..o.len() {
+        v.push(o.get(i).unwrap())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn alphabet_roundtrip_trivial() {
+        let a = Alphabet::new(vec![]);
+        let packed = a.pack();
+        let got = Alphabet::unpack(packed).unwrap();
+        assert_eq!(got.0.len(), 0);
+    }
+
+    #[test]
+    fn alphabet_roundtrip_single_letter() {
+        let v = vec![BitVec::from_bytes(&[0b10000001])];
+        let a = Alphabet::new(v.clone());
+        let packed = a.pack();
+        let got = Alphabet::unpack(packed).unwrap();
+        assert_eq!(got.0, v);
+    }
+
+    #[test]
+    fn alphabet_roundtrip_single_letter_zeroes() {
+        let v = vec![BitVec::from_bytes(&[0])];
+        let a = Alphabet::new(v.clone());
+        let packed = a.pack();
+        let got = Alphabet::unpack(packed).unwrap();
+        assert_eq!(got.0, v);
+    }
+    #[test]
+    fn alphabet_roundtrip_byte_letters() {
+        let v = vec![
+            BitVec::from_bytes(&[0b10000001]),
+            BitVec::from_bytes(&[0b10000000]),
+            BitVec::from_bytes(&[0b00000111]),
+        ];
+        let a = Alphabet::new(v.clone());
+        let packed = a.pack();
+        let got = Alphabet::unpack(packed).unwrap();
+        assert_eq!(got.0.len(), 3);
+        assert_eq!(got.0, v);
     }
 }
