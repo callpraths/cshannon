@@ -1,11 +1,67 @@
-use bit_vec::BitVec;
 use std::convert::TryInto;
 use std::u64;
-use std::usize;
 
 /// A Letter represents an indivisible code point.
-type Letter = BitVec;
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct Letter {
+    data: Vec<u8>,
+    bit_count: u64,
+}
 
+impl Letter {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        Letter {
+            bit_count: 8 * bytes.len() as u64,
+            data: bytes.to_vec(),
+        }
+    }
+
+    fn pack(mut self) -> Vec<u8> {
+        let mut p = Vec::new();
+        p.append(&mut pack_u64(self.bit_count));
+        p.append(&mut self.data);
+        p
+    }
+
+    fn unpack(iter: &mut std::vec::IntoIter<u8>) -> Result<Self, String> {
+        let bit_count = unpack_u64(iter)?;
+        let data = Letter::unpack_data(iter, bit_count)?;
+        Ok(Self {
+            bit_count: bit_count,
+            data: data,
+        })
+    }
+
+    fn unpack_data(iter: &mut std::vec::IntoIter<u8>, bit_count: u64) -> Result<Vec<u8>, String> {
+        let byte_count = (bit_count + 7) / 8;
+        let mut data = Vec::with_capacity(byte_count.try_into().unwrap());
+        for _ in 0..byte_count {
+            match iter.next() {
+                Some(d) => {
+                    let dd = d;
+                    data.push(dd);
+                }
+                None => return Err("too few elements".to_owned()),
+            }
+        }
+        Ok(data)
+    }
+}
+
+fn pack_u64(s: u64) -> Vec<u8> {
+    s.to_be_bytes().to_vec()
+}
+
+fn unpack_u64(iter: &mut std::vec::IntoIter<u8>) -> Result<u64, String> {
+    let mut buf: [u8; 8] = [0; 8];
+    for i in 0..8 {
+        match iter.next() {
+            Some(u) => buf[i] = u,
+            None => return Err("too few elements".to_owned()),
+        }
+    }
+    Ok(u64::from_be_bytes(buf))
+}
 /// Alphabet is an ordered list of unique Letters.
 #[derive(Debug)]
 pub struct Alphabet(Vec<Letter>);
@@ -26,101 +82,23 @@ impl Alphabet {
     pub fn pack(self) -> Vec<u8> {
         let letter_count = self.0.len();
         let mut data: Vec<u8> = Vec::new();
-        data.append(&mut (letter_count as u64).to_be_bytes().to_vec());
-        data.append(&mut self.pack_sizes());
-        data.append(&mut self.pack_letters());
-
+        data.append(&mut pack_u64(letter_count as u64));
+        for l in self.0.into_iter() {
+            data.append(&mut l.pack())
+        }
         data
     }
 
-    fn pack_sizes(&self) -> Vec<u8> {
-        let mut sizes = BitVec::with_capacity(64 * self.0.len());
-        for l in self.0.iter() {
-            let size = BitVec::from_bytes(&mut (l.len() as u64).to_be_bytes().to_vec());
-            bitvec_slow_append(&mut sizes, &size)
-        }
-        sizes.to_bytes()
-    }
-
-    fn pack_letters(self) -> Vec<u8> {
-        let mut packed = BitVec::with_capacity(self.total_size());
-        for l in self.0.into_iter() {
-            bitvec_slow_append(&mut packed, &l);
-        }
-        packed.to_bytes()
-    }
-
-    fn total_size(&self) -> usize {
-        self.0.iter().fold(0, |s, i| s + i.len())
-    }
-}
-
-impl Alphabet {
     /// Deserialize a vector of bytes generated with pack().
     pub fn unpack(data: Vec<u8>) -> Result<Self, String> {
         let mut iter = data.into_iter();
-        let letter_count = Alphabet::unpack_usize(&mut iter)?;
-        let letter_sizes = Alphabet::unpack_sizes(&mut iter, letter_count)?;
-        let letters = Alphabet::unpack_letters(&mut iter, letter_sizes)?;
+        let letter_count = unpack_u64(&mut iter)?;
+        let mut letters = Vec::new();
+        for _ in 0..letter_count {
+            let l = Letter::unpack(&mut iter)?;
+            letters.push(l);
+        }
         Ok(Alphabet(letters))
-    }
-
-    fn unpack_usize(iter: &mut std::vec::IntoIter<u8>) -> Result<usize, String> {
-        let mut buf: [u8; 8] = [0; 8];
-        for i in 0..8 {
-            match iter.next() {
-                Some(u) => buf[i] = u,
-                None => return Err("too few elements".to_owned()),
-            }
-        }
-        let c = u64::from_be_bytes(buf);
-        if c > (usize::max_value() as u64) {
-            return Err("count too large".to_owned());
-        }
-        Ok(c as usize)
-    }
-
-    fn unpack_sizes(iter: &mut std::vec::IntoIter<u8>, count: usize) -> Result<Vec<usize>, String> {
-        let byte_count = count * 8;
-        let mut bytes = Vec::with_capacity(byte_count);
-        for _ in 0..byte_count {
-            match iter.next() {
-                Some(u) => bytes.push(u),
-                None => return Err("too few elements".to_owned()),
-            }
-        }
-        let mut bits = BitVec::from_bytes(&bytes);
-        let mut sizes = Vec::with_capacity(count);
-
-        for _ in 0..count {
-            assert!(bits.len() >= 64);
-            let word = bits.split_off(bits.len() - 64);
-            assert!(word.len() == 64);
-            let buf: [u8; 8] = word.to_bytes().as_slice().try_into().unwrap();
-            let s = u64::from_be_bytes(buf);
-            if s > (usize::max_value() as u64) {
-                return Err(format!("size {} too large", s).to_owned());
-            }
-            sizes.push(s as usize)
-        }
-
-        Ok(sizes)
-    }
-
-    fn unpack_letters(
-        iter: &mut std::vec::IntoIter<u8>,
-        sizes: Vec<usize>,
-    ) -> Result<Vec<Letter>, String> {
-        let mut bits = BitVec::from_bytes(&iter.collect::<Vec<u8>>());
-        let mut letters = Vec::with_capacity(sizes.len());
-        for size in sizes.iter() {
-            if bits.len() < *size {
-                return Err("ran out of buts".to_owned());
-            }
-            letters.push(bits.split_off(bits.len() - *size));
-        }
-        letters.reverse();
-        Ok(letters)
     }
 }
 
@@ -177,14 +155,6 @@ impl Text {
     }
 }
 
-// Can't use BitVec::append() because of
-// https://github.com/contain-rs/bit-vec/issues/63
-fn bitvec_slow_append(v: &mut BitVec, o: &BitVec) {
-    for i in 0..o.len() {
-        v.push(o.get(i).unwrap())
-    }
-}
-
 #[cfg(test)]
 mod alphabet_tests {
     use super::*;
@@ -199,7 +169,7 @@ mod alphabet_tests {
 
     #[test]
     fn roundtrip_single_letter() {
-        let v = vec![BitVec::from_bytes(&[0b10000001])];
+        let v = vec![Letter::from_bytes(&[0b10000001])];
         let a = Alphabet::new(v.clone());
         let packed = a.pack();
         let got = Alphabet::unpack(packed).unwrap();
@@ -208,7 +178,7 @@ mod alphabet_tests {
 
     #[test]
     fn roundtrip_single_letter_zeroes() {
-        let v = vec![BitVec::from_bytes(&[0])];
+        let v = vec![Letter::from_bytes(&[0])];
         let a = Alphabet::new(v.clone());
         let packed = a.pack();
         let got = Alphabet::unpack(packed).unwrap();
@@ -217,9 +187,9 @@ mod alphabet_tests {
     #[test]
     fn roundtrip_byte_letters() {
         let v = vec![
-            BitVec::from_bytes(&[0b10000001]),
-            BitVec::from_bytes(&[0b10000000]),
-            BitVec::from_bytes(&[0b00000111]),
+            Letter::from_bytes(&[0b10000001]),
+            Letter::from_bytes(&[0b10000000]),
+            Letter::from_bytes(&[0b00000111]),
         ];
         let a = Alphabet::new(v.clone());
         let packed = a.pack();
@@ -230,8 +200,8 @@ mod alphabet_tests {
     #[test]
     fn roundtrip_large_letters() {
         let v = vec![
-            BitVec::from_bytes(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99]),
-            BitVec::from_bytes(&[0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9]),
+            Letter::from_bytes(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99]),
+            Letter::from_bytes(&[0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9]),
         ];
         let a = Alphabet::new(v.clone());
         let packed = a.pack();
@@ -242,15 +212,15 @@ mod alphabet_tests {
     #[test]
     fn roundtrip_many_letters() {
         let v = vec![
-            BitVec::from_bytes(&[0x11]),
-            BitVec::from_bytes(&[0x12]),
-            BitVec::from_bytes(&[0x13]),
-            BitVec::from_bytes(&[0x14]),
-            BitVec::from_bytes(&[0x15]),
-            BitVec::from_bytes(&[0x16]),
-            BitVec::from_bytes(&[0x17]),
-            BitVec::from_bytes(&[0x18]),
-            BitVec::from_bytes(&[0x19]),
+            Letter::from_bytes(&[0x11]),
+            Letter::from_bytes(&[0x12]),
+            Letter::from_bytes(&[0x13]),
+            Letter::from_bytes(&[0x14]),
+            Letter::from_bytes(&[0x15]),
+            Letter::from_bytes(&[0x16]),
+            Letter::from_bytes(&[0x17]),
+            Letter::from_bytes(&[0x18]),
+            Letter::from_bytes(&[0x19]),
         ];
         let a = Alphabet::new(v.clone());
         let packed = a.pack();
@@ -261,11 +231,29 @@ mod alphabet_tests {
     #[test]
     fn roundtrip_different_lengths() {
         let v = vec![
-            BitVec::from_bytes(&[0x01]),
-            BitVec::from_bytes(&[0xa1, 0xa2]),
-            BitVec::from_bytes(&[0xb1, 0xb2, 0xb3]),
-            BitVec::from_bytes(&[0xc1, 0xc2]),
-            BitVec::from_bytes(&[0xd1]),
+            Letter::from_bytes(&[0x01]),
+            Letter::from_bytes(&[0xa1, 0xa2]),
+            Letter::from_bytes(&[0xb1, 0xb2, 0xb3]),
+            Letter::from_bytes(&[0xc1, 0xc2]),
+            Letter::from_bytes(&[0xd1]),
+        ];
+        let a = Alphabet::new(v.clone());
+        let packed = a.pack();
+        let got = Alphabet::unpack(packed).unwrap();
+        assert_eq!(got.0, v);
+    }
+
+    #[test]
+    fn roundtrip_unaligned_lengths() {
+        let v = vec![
+            Letter {
+                bit_count: 3,
+                data: vec![0b111],
+            },
+            Letter {
+                bit_count: 11,
+                data: vec![0b100, 0x11],
+            },
         ];
         let a = Alphabet::new(v.clone());
         let packed = a.pack();
