@@ -1,6 +1,11 @@
 use std::convert::TryInto;
 use std::u64;
 
+/// core::result::Result alias with uniform error type.
+///
+/// All public functions from this package return results of this type.
+type Result<R> = core::result::Result<R, String>;
+
 /// A Letter represents an indivisible code point.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Letter {
@@ -55,7 +60,7 @@ fn pack_u64(s: u64) -> Vec<u8> {
     s.to_be_bytes().to_vec()
 }
 
-fn unpack_u64(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<u64, String> {
+fn unpack_u64(iter: &mut std::vec::IntoIter<u8>) -> Result<u64> {
     let mut buf: [u8; 8] = [0; 8];
     for i in 0..8 {
         match iter.next() {
@@ -93,7 +98,7 @@ impl Alphabet {
     }
 
     /// Deserialize a vector of bytes generated with pack().
-    pub fn unpack(data: Vec<u8>) -> core::result::Result<Self, String> {
+    pub fn unpack(data: Vec<u8>) -> Result<Self> {
         let mut iter = data.into_iter();
         let letter_count = unpack_u64(&mut iter)?;
         let mut letters = Vec::new();
@@ -118,11 +123,8 @@ impl<'a> std::iter::FromIterator<&'a Letter> for Alphabet {
     }
 }
 
-/// An alias for Results from this package.
-type Result = core::result::Result<Letter, String>;
-
 /// Read previously pack()ed text given the corresponding Alphabet.
-pub fn parse<R>(_a: Alphabet, _r: R) -> impl std::iter::Iterator<Item = Result>
+pub fn parse<R>(_a: Alphabet, _r: R) -> impl std::iter::Iterator<Item = Result<Letter>>
 where
     R: std::io::Read,
 {
