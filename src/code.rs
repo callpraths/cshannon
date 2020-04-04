@@ -23,7 +23,7 @@ impl Letter {
         p
     }
 
-    fn unpack(iter: &mut std::vec::IntoIter<u8>) -> Result<Self, String> {
+    fn unpack(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<Self, String> {
         let bit_count = unpack_u64(iter)?;
         let data = Letter::unpack_data(iter, bit_count)?;
         Ok(Self {
@@ -32,7 +32,10 @@ impl Letter {
         })
     }
 
-    fn unpack_data(iter: &mut std::vec::IntoIter<u8>, bit_count: u64) -> Result<Vec<u8>, String> {
+    fn unpack_data(
+        iter: &mut std::vec::IntoIter<u8>,
+        bit_count: u64,
+    ) -> core::result::Result<Vec<u8>, String> {
         let byte_count = (bit_count + 7) / 8;
         let mut data = Vec::with_capacity(byte_count.try_into().unwrap());
         for _ in 0..byte_count {
@@ -52,7 +55,7 @@ fn pack_u64(s: u64) -> Vec<u8> {
     s.to_be_bytes().to_vec()
 }
 
-fn unpack_u64(iter: &mut std::vec::IntoIter<u8>) -> Result<u64, String> {
+fn unpack_u64(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<u64, String> {
     let mut buf: [u8; 8] = [0; 8];
     for i in 0..8 {
         match iter.next() {
@@ -90,7 +93,7 @@ impl Alphabet {
     }
 
     /// Deserialize a vector of bytes generated with pack().
-    pub fn unpack(data: Vec<u8>) -> Result<Self, String> {
+    pub fn unpack(data: Vec<u8>) -> core::result::Result<Self, String> {
         let mut iter = data.into_iter();
         let letter_count = unpack_u64(&mut iter)?;
         let mut letters = Vec::new();
@@ -102,17 +105,6 @@ impl Alphabet {
     }
 }
 
-impl Alphabet {
-    /// Parse a stream of bytes coded with this Alphabet into a Text.
-    ///
-    /// See Text::pack() for the reverse operation.
-    pub fn parse<T>(&self, _data: T) -> Text
-    where
-        T: IntoIterator<Item = u8>,
-    {
-        Text(Vec::new())
-    }
-}
 /// An alphabet may be generated from an iterator over Letter.
 ///
 /// This operation clone()s the Letters.
@@ -126,33 +118,24 @@ impl<'a> std::iter::FromIterator<&'a Letter> for Alphabet {
     }
 }
 
-/// A coded stream in some Alphabet.
-///
-/// Text is a zero copy abstraction over a byte stream that allows iterating
-/// over the underlying byte stream in the relevant Alphabet avoiding memory
-/// copy or fragmentation.
-#[derive(Debug)]
-pub struct Text(Vec<Letter>);
+/// An alias for Results from this package.
+type Result = core::result::Result<Letter, String>;
 
-/// Iterate over the Text in the underlying Alphabet.
-///
-/// The iteration avoids memory copy or fragmentation.
-impl<'a> IntoIterator for &'a Text {
-    type Item = &'a Letter;
-    type IntoIter = std::slice::Iter<'a, Letter>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        (&self.0).into_iter()
-    }
+/// Read previously pack()ed text given the corresponding Alphabet.
+pub fn parse<R>(_a: Alphabet, _r: R) -> impl std::iter::Iterator<Item = Result>
+where
+    R: std::io::Read,
+{
+    vec![Err("not implemented".to_owned())].into_iter()
 }
 
-impl Text {
-    /// Serialize Text into a byte stream.
-    ///
-    /// May be deserialized (with known Alphabet) via Alphabet::parse()
-    pub fn pack(self) -> std::vec::IntoIter<u8> {
-        Vec::new().into_iter()
-    }
+/// Write a packed stream of letters.
+pub fn pack<I, W>(_i: I, _w: W) -> core::result::Result<usize, String>
+where
+    I: Iterator<Item = Letter>,
+    W: std::io::Write,
+{
+    Err("not implemented".to_owned())
 }
 
 #[cfg(test)]
