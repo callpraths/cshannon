@@ -201,7 +201,7 @@ impl Alphabet {
         };
         for l in self.0.iter() {
             let (tip, offset) = Alphabet::follow_branch(&mut root, l, 0)?;
-            let tail = Alphabet::node(l, offset + 1);
+            let tail = Alphabet::tail(l, offset + 1);
             match tip {
                 Node::Internal { zero, one } => {
                     if l.at(offset)? {
@@ -248,15 +248,15 @@ impl Alphabet {
         }
     }
 
-    fn node<'a>(l: &'a Letter, offset: usize) -> Node<'a> {
+    fn tail<'a>(l: &'a Letter, offset: usize) -> Node<'a> {
         match l.at(offset) {
             Ok(false) => Node::Internal {
-                zero: Some(Box::new(Alphabet::node(l, offset + 1))),
+                zero: Some(Box::new(Alphabet::tail(l, offset + 1))),
                 one: None,
             },
             Ok(true) => Node::Internal {
                 zero: None,
-                one: Some(Box::new(Alphabet::node(l, offset + 1))),
+                one: Some(Box::new(Alphabet::tail(l, offset + 1))),
             },
             Err(_) => Node::Leaf { letter: l },
         }
@@ -612,7 +612,7 @@ mod alphabet_tree_tests {
             a.tree().unwrap(),
             Node::new1(Node::new0(Node::new0(Node::new0(Node::new0(Node::new0(
                 Node::new0(Node::new0(Node::new1(Node::new1(Node::newl(&l)))))
-            ))))))
+            )))))),
         );
     }
 
@@ -629,7 +629,7 @@ mod alphabet_tree_tests {
         let a = Alphabet::new(vec![l0.clone(), l1.clone()]);
         assert_eq!(
             a.tree().unwrap(),
-            Node::new(Node::newl(&l0), Node::newl(&l1))
+            Node::new(Node::newl(&l0), Node::newl(&l1)),
         )
     }
 
@@ -649,7 +649,41 @@ mod alphabet_tree_tests {
             Node::new0(Node::new1(Node::new(
                 Node::newl(&l0),
                 Node::new0(Node::newl(&l1)),
-            )))
-        )
+            ))),
+        );
+    }
+
+    #[test]
+    fn multi_byte_shared() {
+        let l0 = Letter {
+            data: vec![0b1000_0000, 0b1100_0000],
+            bit_count: 10,
+        };
+        let l1 = Letter {
+            data: vec![0b1000_0000, 0b0000_0000],
+            bit_count: 10,
+        };
+        let l2 = Letter {
+            data: vec![0b1010_0000],
+            bit_count: 3,
+        };
+        let l3 = Letter {
+            data: vec![0b0000_0000],
+            bit_count: 3,
+        };
+        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]);
+        assert_eq!(
+            a.tree().unwrap(),
+            Node::new(
+                Node::new0(Node::new0(Node::newl(&l3))),
+                Node::new0(Node::new(
+                    Node::new0(Node::new0(Node::new0(Node::new0(Node::new0(Node::new(
+                        Node::new0(Node::newl(&l1)),
+                        Node::new1(Node::newl(&l0)),
+                    )))))),
+                    Node::newl(&l2),
+                )),
+            ),
+        );
     }
 }
