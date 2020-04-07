@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 use std::fmt;
+use std::io::Read;
 use std::io::Write;
 use std::u64;
 
@@ -276,12 +277,154 @@ impl<'a> std::iter::FromIterator<&'a Letter> for Alphabet {
     }
 }
 
-/// Read previously pack()ed text given the corresponding Alphabet.
-pub fn parse<R>(_a: Alphabet, _r: R) -> impl std::iter::Iterator<Item = Result<Letter>>
+pub struct TextParser<'a, R>
 where
     R: std::io::Read,
 {
-    vec![Err("not implemented".to_owned())].into_iter()
+    root: Node<'a>,
+    state: TextParserState<R>,
+}
+
+struct TextParserState<R>
+where
+    R: std::io::Read,
+{
+    r: std::io::Bytes<std::io::BufReader<R>>,
+    current_byte: u8,
+    current_bit_offset: usize,
+    eof: bool,
+}
+
+impl<R> TextParserState<R>
+where
+    R: std::io::Read,
+{
+    fn next_bit(&mut self) -> Option<Result<bool>> {
+        if self.current_bit_offset == 8 {
+            match self.r.next() {
+                None => return None,
+                Some(Err(e)) => return Some(Err(e.to_string())),
+                Some(Ok(b)) => {
+                    self.current_byte = b;
+                }
+            }
+            self.current_bit_offset = 0;
+        }
+        Some(Ok(self.current_byte
+            & BIT_HOLE_MASKS[self.current_bit_offset]
+            > 0))
+    }
+}
+
+impl<'a, R> TextParser<'a, R>
+where
+    R: std::io::Read,
+{
+    pub fn new(root: Node<'a>, r: R) -> Self {
+        TextParser {
+            root: root,
+            state: TextParserState {
+                r: std::io::BufReader::new(r).bytes(),
+                current_byte: 0,
+                current_bit_offset: 8,
+                eof: false,
+            },
+        }
+    }
+}
+
+impl<'a, R> std::iter::Iterator for TextParser<'a, R>
+where
+    R: std::io::Read,
+{
+    type Item = Result<&'a Letter>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.state.eof {
+            return None;
+        }
+        Self::parse_one(&mut self.state, &self.root, true)
+    }
+}
+
+impl<'a, R> TextParser<'a, R>
+where
+    R: std::io::Read,
+{
+    fn parse_one<'b>(
+        state: &'b mut TextParserState<R>,
+        node: &'b Node<'a>,
+        trivial_tail: bool,
+    ) -> Option<Result<&'a Letter>> {
+        if let Node::Leaf { letter } = node {
+            return Some(Ok(letter));
+        }
+
+        let b = match state.next_bit() {
+            None => {
+                state.eof = true;
+                if trivial_tail {
+                    return None;
+                } else {
+                    return Some(Err("trailing data".to_owned()));
+                }
+            }
+            Some(Err(e)) => {
+                state.eof = true;
+                return Some(Err(e));
+            }
+            Some(Ok(b)) => b,
+        };
+
+        let next = match node {
+            Node::Internal { zero, one } => {
+                if b {
+                    one
+                } else {
+                    zero
+                }
+            }
+            _ => panic!("neither an internal node nor leaf"),
+        };
+
+        match next {
+            None => {
+                state.eof = true;
+                if trivial_tail {
+                    loop {
+                        match state.next_bit() {
+                            None => {
+                                return None;
+                            }
+                            Some(Err(e)) => {
+                                return Some(Err(e));
+                            }
+                            Some(Ok(true)) => {
+                                // Found a non-trivial bit in the extended trail.
+                                break;
+                            }
+                            Some(Ok(false)) => {}
+                        }
+                    }
+                }
+                return Some(Err("trailing data".to_owned()));
+            }
+            Some(next) => {
+                return Self::parse_one(state, &*next, trivial_tail & !b);
+            }
+        }
+    }
+}
+
+/// Read previously pack()ed text given the corresponding Alphabet.
+pub fn parse<'a, R>(
+    a: &'a Alphabet,
+    r: R,
+) -> Result<impl std::iter::Iterator<Item = Result<&'a Letter>>>
+where
+    R: std::io::Read,
+{
+    Ok(TextParser::new(a.tree()?, r))
 }
 
 /// Write a packed stream of letters.
