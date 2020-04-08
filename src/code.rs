@@ -310,9 +310,11 @@ where
             }
             self.current_bit_offset = 0;
         }
-        Some(Ok(self.current_byte
+        let b = Some(Ok(self.current_byte
             & BIT_HOLE_MASKS[self.current_bit_offset]
-            > 0))
+            > 0));
+        self.current_bit_offset += 1;
+        b
     }
 }
 
@@ -828,5 +830,163 @@ mod alphabet_tree_tests {
                 )),
             ),
         );
+    }
+}
+
+#[cfg(test)]
+mod text_parse_tests {
+    use super::*;
+
+    use std::io::Cursor;
+
+    #[test]
+    fn empty() {
+        let a = Alphabet::new(vec![Letter::from_bytes(&[0xff])]);
+        let t: Vec<u8> = vec![];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        let c = r.unwrap();
+        assert_eq!(c.len(), 0);
+    }
+
+    #[test]
+    fn single_byte_disjoint() {
+        let l0 = Letter::from_bytes(&[0x00]);
+        let l1 = Letter::from_bytes(&[0x11]);
+        let l2 = Letter::from_bytes(&[0x22]);
+        let l3 = Letter::from_bytes(&[0x33]);
+
+        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]);
+        let t: Vec<u8> = vec![0x00, 0x22, 0x33, 0x22, 0x33, 0x00];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        let c = r.unwrap();
+        assert_eq!(c, vec![&l0, &l2, &l3, &l2, &l3, &l0]);
+    }
+
+    #[test]
+    fn single_byte_common_prefix() {
+        let l0 = Letter::from_bytes(&[0b0000_0000]);
+        let l1 = Letter::from_bytes(&[0b0000_0010]);
+        let l2 = Letter::from_bytes(&[0b0010_1111]);
+        let l3 = Letter::from_bytes(&[0b0011_0000]);
+
+        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]);
+        let t: Vec<u8> = vec![
+            0b0000_0000,
+            0b0010_1111,
+            0b0011_0000,
+            0b0010_1111,
+            0b0011_0000,
+            0b0000_0000,
+        ];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        let c = r.unwrap();
+        assert_eq!(c, vec![&l0, &l2, &l3, &l2, &l3, &l0]);
+    }
+
+    #[test]
+    fn multi_byte_common_prefix() {
+        let l0 = Letter::from_bytes(&[0x00, 0x11]);
+        let l1 = Letter::from_bytes(&[0x00, 0x10]);
+        let l2 = Letter::from_bytes(&[0x00, 0x01]);
+        let l3 = Letter::from_bytes(&[0x11]);
+
+        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]);
+        let t: Vec<u8> = vec![0x00, 0x11, 0x00, 0x01, 0x11, 0x00, 0x01, 0x11, 0x00, 0x11];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        let c = r.unwrap();
+        assert_eq!(c, vec![&l0, &l2, &l3, &l2, &l3, &l0]);
+    }
+
+    #[test]
+    fn short_unaligned_fit() {
+        let l0 = Letter {
+            data: vec![0b1000_0000],
+            bit_count: 3,
+        };
+        let l1 = Letter {
+            data: vec![0b0100_0000],
+            bit_count: 2,
+        };
+
+        let a = Alphabet::new(vec![l0.clone(), l1.clone()]);
+        let t: Vec<u8> = vec![0b100_01_100, 0b01_100_100];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        let c = r.unwrap();
+        assert_eq!(c, vec![&l0, &l1, &l0, &l1, &l0, &l0]);
+    }
+
+    #[test]
+    fn short_unaligned_trailing_zeros() {
+        let l0 = Letter {
+            data: vec![0b1000_0000],
+            bit_count: 3,
+        };
+        let l1 = Letter {
+            data: vec![0b0100_0000],
+            bit_count: 2,
+        };
+
+        let a = Alphabet::new(vec![l0.clone(), l1.clone()]);
+        let t: Vec<u8> = vec![0b100_01_100, 0b01_01_0000];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        let c = r.unwrap();
+        assert_eq!(c, vec![&l0, &l1, &l0, &l1, &l1]);
+    }
+
+    #[test]
+    fn complex_long_unaligned_shared_trailing_zeros() {
+        let l0 = Letter {
+            data: vec![0b1000_0001, 0b1100_0000],
+            bit_count: 10,
+        };
+        let l1 = Letter {
+            data: vec![0b1000_0001, 0b1000_0000],
+            bit_count: 13,
+        };
+
+        let a = Alphabet::new(vec![l0.clone(), l1.clone()]);
+        let t: Vec<u8> = vec![
+            0b1000_0001,
+            0b11__1000_00,
+            0b01_1000_0__1,
+            0b000_0001_1,
+            0b000_0__1000,
+            0b0001_11__00,
+            0b0000_0000,
+            0b0000_0000,
+        ];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        let c = r.unwrap();
+        assert_eq!(c, vec![&l0, &l1, &l1, &l0]);
+    }
+
+    #[test]
+    fn incomplete() {
+        let l0 = Letter::from_bytes(&[0x11, 0x00]);
+
+        let a = Alphabet::new(vec![l0.clone()]);
+        let t: Vec<u8> = vec![0x11];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn nonexistent_letter() {
+        let l0 = Letter::from_bytes(&[0x11, 0x00]);
+
+        let a = Alphabet::new(vec![l0.clone()]);
+        let t: Vec<u8> = vec![0x10, 0x00];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn trailing_data() {
+        let l0 = Letter::from_bytes(&[0x11]);
+
+        let a = Alphabet::new(vec![l0.clone()]);
+        let t: Vec<u8> = vec![0x11, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01];
+        let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
+        assert!(r.is_err());
     }
 }
