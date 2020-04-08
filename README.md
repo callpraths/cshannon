@@ -15,9 +15,10 @@ reasonable, and readability is prioritized over efficiency.
     * ~~tokens == {english word, byte, unicode ... (to support hindi)}~~
   * ~~Token stream is transformed back to text.~~
 * ~Model builder: Relative frequencies are computed for the input.~
-* Code:
-  * pack(iter over Letters) -> vec<u8>
-  * unpack(Alphabet, vec<u8>) -> iterable over Letters
+* ~Code:~
+  * ~pack(iter over Letters) -> vec<u8>~
+  * ~unpack(Alphabet, vec<u8>) -> iterable over Letters~
+* Split code package into sub-packages, control visibility properly.
 * Fix error handling before it's too late.
   * [failure?](https://github.com/rust-lang-nursery/failure)
 * Coder:
@@ -26,9 +27,6 @@ reasonable, and readability is prioritized over efficiency.
   * Create from vec<u8>
   * coder[token.Token] -> code.Letter
   * coder[code.Letter] -> token.Token
-* File IO
-  * Given vec<u8> for Coder and Code, write to file.
-  * Given file, read vec<u8> for Coder and Code.
 * Shanon coder:
   * Shannon coding scheme is computed.
 * end-to-end encode:
