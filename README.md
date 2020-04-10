@@ -18,7 +18,7 @@ reasonable, and readability is prioritized over efficiency.
 * ~Code:~
   * ~pack(iter over Letters) -> vec<u8>~
   * ~unpack(Alphabet, vec<u8>) -> iterable over Letters~
-* Split code package into sub-packages, control visibility properly.
+* ~Split code package into sub-packages, control visibility properly.~
 * Fix error handling before it's too late.
   * [failure?](https://github.com/rust-lang-nursery/failure)
 * Coder:
