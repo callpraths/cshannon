@@ -1,15 +1,10 @@
 use super::common::{pack_u64, unpack_u64};
-use super::letter::Letter;
+use super::letter::{Letter, Peephole as lPeephole};
 use super::types::Result;
 
 /// Alphabet is an ordered list of unique Letters.
 #[derive(Debug)]
 pub struct Alphabet(Vec<Letter>);
-
-/// Provides deeper access for sibling modules than the public API.
-pub trait Peephole {
-    fn tree<'a>(&'a self) -> Result<Node<'a>>;
-}
 
 impl Alphabet {
     /// Create a new Alphabet with the given Letters.Alphabet
@@ -17,6 +12,19 @@ impl Alphabet {
     /// The order of Letters is significant. pack()/unpack() conserve the order.
     pub fn new(letters: Vec<Letter>) -> Self {
         Alphabet(letters)
+    }
+}
+
+/// An alphabet may be generated from an iterator over Letter.
+///
+/// This operation clone()s the Letters.
+impl<'a> std::iter::FromIterator<&'a Letter> for Alphabet {
+    fn from_iter<I: IntoIterator<Item = &'a Letter>>(i: I) -> Self {
+        let mut a = Alphabet(Vec::new());
+        for l in i {
+            a.0.push(l.clone());
+        }
+        a
     }
 }
 
@@ -47,45 +55,9 @@ impl Alphabet {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Node<'a> {
-    Internal {
-        zero: Option<Box<Node<'a>>>,
-        one: Option<Box<Node<'a>>>,
-    },
-    Leaf {
-        letter: &'a Letter,
-    },
-}
-
-impl Node<'_> {
-    // These methods are used only be tests.
-    #![allow(dead_code)]
-
-    fn new0<'a>(zero: Node<'a>) -> Node<'a> {
-        Node::Internal {
-            zero: Some(Box::new(zero)),
-            one: None,
-        }
-    }
-
-    pub fn new1<'a>(one: Node<'a>) -> Node<'a> {
-        Node::Internal {
-            zero: None,
-            one: Some(Box::new(one)),
-        }
-    }
-
-    pub fn newl<'a>(l: &'a Letter) -> Node<'a> {
-        Node::Leaf { letter: l }
-    }
-
-    pub fn new<'a>(zero: Node<'a>, one: Node<'a>) -> Node<'a> {
-        Node::Internal {
-            zero: Some(Box::new(zero)),
-            one: Some(Box::new(one)),
-        }
-    }
+/// Provides deeper access for sibling modules than the public API.
+pub trait Peephole {
+    fn tree<'a>(&'a self) -> Result<Node<'a>>;
 }
 
 impl Peephole for Alphabet {
@@ -114,6 +86,7 @@ impl Peephole for Alphabet {
         Ok(root)
     }
 }
+
 impl Alphabet {
     fn follow_branch<'a, 'b>(
         tree: &'b mut Node<'a>,
@@ -162,21 +135,49 @@ impl Alphabet {
     }
 }
 
-/// An alphabet may be generated from an iterator over Letter.
-///
-/// This operation clone()s the Letters.
-impl<'a> std::iter::FromIterator<&'a Letter> for Alphabet {
-    fn from_iter<I: IntoIterator<Item = &'a Letter>>(i: I) -> Self {
-        let mut a = Alphabet(Vec::new());
-        for l in i {
-            a.0.push(l.clone());
+#[derive(Debug, PartialEq)]
+pub enum Node<'a> {
+    Internal {
+        zero: Option<Box<Node<'a>>>,
+        one: Option<Box<Node<'a>>>,
+    },
+    Leaf {
+        letter: &'a Letter,
+    },
+}
+
+impl Node<'_> {
+    // These methods are used only by unit tests.
+    #![allow(dead_code)]
+
+    fn new0<'a>(zero: Node<'a>) -> Node<'a> {
+        Node::Internal {
+            zero: Some(Box::new(zero)),
+            one: None,
         }
-        a
+    }
+
+    pub fn new1<'a>(one: Node<'a>) -> Node<'a> {
+        Node::Internal {
+            zero: None,
+            one: Some(Box::new(one)),
+        }
+    }
+
+    pub fn newl<'a>(l: &'a Letter) -> Node<'a> {
+        Node::Leaf { letter: l }
+    }
+
+    pub fn new<'a>(zero: Node<'a>, one: Node<'a>) -> Node<'a> {
+        Node::Internal {
+            zero: Some(Box::new(zero)),
+            one: Some(Box::new(one)),
+        }
     }
 }
 
 #[cfg(test)]
-mod alphabet_pack_tests {
+mod pack_tests {
     use super::*;
 
     #[test]
@@ -274,7 +275,7 @@ mod alphabet_pack_tests {
 }
 
 #[cfg(test)]
-mod alphabet_tree_tests {
+mod tree_tests {
     use super::*;
 
     #[test]

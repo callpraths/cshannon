@@ -1,6 +1,5 @@
 use super::common::{pack_u64, unpack_u64, BIT_HOLE_MASKS};
 use super::types::Result;
-
 use std::convert::TryInto;
 use std::fmt;
 
@@ -10,22 +9,6 @@ pub struct Letter {
     data: Vec<u8>,
     // TODO: Store as usize
     bit_count: u64,
-}
-
-/// Provides deeper access for sibling modules than the public API.
-pub trait Peephole {
-    fn data<'a>(&'a self) -> &'a Vec<u8>;
-    fn bit_count(&self) -> u64;
-}
-
-impl Peephole for Letter {
-    fn data<'a>(&'a self) -> &'a Vec<u8> {
-        &self.data
-    }
-
-    fn bit_count(&self) -> u64 {
-        self.bit_count
-    }
 }
 
 impl fmt::Display for Letter {
@@ -42,6 +25,9 @@ impl fmt::Display for Letter {
 }
 
 impl Letter {
+    /// Create a new Letter with given data and number of bits.
+    ///
+    /// Trailing bits in data (beyond bit_count) are ignored.
     pub fn new(data: &[u8], bit_count: u64) -> Self {
         Self {
             data: data.to_vec(),
@@ -66,15 +52,35 @@ impl Letter {
         let o = i % 8;
         Ok(self.data[b] & BIT_HOLE_MASKS[o] > 0)
     }
+}
 
-    pub fn pack(mut self) -> Vec<u8> {
+/// Provides deeper access for sibling modules than the public API.
+pub trait Peephole {
+    fn data<'a>(&'a self) -> &'a Vec<u8>;
+    fn bit_count(&self) -> u64;
+    fn pack(self) -> Vec<u8>;
+    fn unpack(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<Self, String>
+    where
+        Self: Sized;
+}
+
+impl Peephole for Letter {
+    fn data<'a>(&'a self) -> &'a Vec<u8> {
+        &self.data
+    }
+
+    fn bit_count(&self) -> u64 {
+        self.bit_count
+    }
+
+    fn pack(mut self) -> Vec<u8> {
         let mut p = Vec::new();
         p.append(&mut pack_u64(self.bit_count));
         p.append(&mut self.data);
         p
     }
 
-    pub fn unpack(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<Self, String> {
+    fn unpack(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<Self, String> {
         let bit_count = unpack_u64(iter)?;
         let data = Letter::unpack_data(iter, bit_count)?;
         Ok(Self {
@@ -82,7 +88,9 @@ impl Letter {
             data: data,
         })
     }
+}
 
+impl Letter {
     fn unpack_data(
         iter: &mut std::vec::IntoIter<u8>,
         bit_count: u64,
@@ -103,7 +111,7 @@ impl Letter {
 }
 
 #[cfg(test)]
-mod letter_tests {
+mod tests {
     use super::*;
 
     #[test]

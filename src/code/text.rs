@@ -2,12 +2,63 @@ use super::alphabet::{Alphabet, Node, Peephole as aPeephole};
 use super::common::BIT_HOLE_MASKS;
 use super::letter::{Letter, Peephole as lPeephole};
 use super::types::Result;
-
 use std::io::Read;
 use std::io::Write;
 use std::u64;
 
-pub struct TextParser<'a, R>
+/// Write a packed stream of letters.
+///
+/// Returns the number of bytes written.
+pub fn pack<I, W>(letters: I, w: W) -> core::result::Result<usize, String>
+where
+    I: Iterator<Item = Letter>,
+    W: std::io::Write,
+{
+    let mut bytes_written: usize = 0;
+    let mut bw = std::io::BufWriter::new(w);
+    let mut byte_buffer_len: u64 = 0; // In practice <= 7
+    let mut byte_buffer: u8 = 0;
+    for l in letters {
+        let mut has_more_bytes = true;
+        let mut remaining_bit_count = l.bit_count();
+        for b in l.data().iter() {
+            assert!(has_more_bytes);
+            byte_buffer |= b >> byte_buffer_len;
+            if byte_buffer_len + remaining_bit_count >= 8 {
+                bytes_written += bw.write(&[byte_buffer]).map_err(|e| e.to_string())?;
+
+                byte_buffer = safe_overflow_leftshift(*b, 8 - byte_buffer_len);
+                if remaining_bit_count > 8 {
+                    remaining_bit_count -= 8;
+                } else {
+                    byte_buffer_len = (byte_buffer_len + remaining_bit_count) % 8;
+                    remaining_bit_count = 0;
+                }
+            } else {
+                byte_buffer_len += remaining_bit_count;
+                has_more_bytes = false;
+            }
+        }
+    }
+    if byte_buffer_len > 0 {
+        bytes_written += bw.write(&[byte_buffer]).map_err(|e| e.to_string())?;
+    }
+    bw.flush().map_err(|e| e.to_string())?;
+    Ok(bytes_written)
+}
+
+/// Read previously pack()ed text given the corresponding Alphabet.
+pub fn parse<'a, R>(
+    a: &'a Alphabet,
+    r: R,
+) -> Result<impl std::iter::Iterator<Item = Result<&'a Letter>>>
+where
+    R: std::io::Read,
+{
+    Ok(TextParser::new(a.tree()?, r))
+}
+
+struct TextParser<'a, R>
 where
     R: std::io::Read,
 {
@@ -23,29 +74,6 @@ where
     current_byte: u8,
     current_bit_offset: usize,
     eof: bool,
-}
-
-impl<R> TextParserState<R>
-where
-    R: std::io::Read,
-{
-    fn next_bit(&mut self) -> Option<Result<bool>> {
-        if self.current_bit_offset == 8 {
-            match self.r.next() {
-                None => return None,
-                Some(Err(e)) => return Some(Err(e.to_string())),
-                Some(Ok(b)) => {
-                    self.current_byte = b;
-                }
-            }
-            self.current_bit_offset = 0;
-        }
-        let b = Some(Ok(self.current_byte
-            & BIT_HOLE_MASKS[self.current_bit_offset]
-            > 0));
-        self.current_bit_offset += 1;
-        b
-    }
 }
 
 impl<'a, R> TextParser<'a, R>
@@ -148,56 +176,27 @@ where
     }
 }
 
-/// Read previously pack()ed text given the corresponding Alphabet.
-pub fn parse<'a, R>(
-    a: &'a Alphabet,
-    r: R,
-) -> Result<impl std::iter::Iterator<Item = Result<&'a Letter>>>
+impl<R> TextParserState<R>
 where
     R: std::io::Read,
 {
-    Ok(TextParser::new(a.tree()?, r))
-}
-
-/// Write a packed stream of letters.
-///
-/// Returns the number of bytes written.
-pub fn pack<I, W>(letters: I, w: W) -> core::result::Result<usize, String>
-where
-    I: Iterator<Item = Letter>,
-    W: std::io::Write,
-{
-    let mut bytes_written: usize = 0;
-    let mut bw = std::io::BufWriter::new(w);
-    let mut byte_buffer_len: u64 = 0; // In practice <= 7
-    let mut byte_buffer: u8 = 0;
-    for l in letters {
-        let mut has_more_bytes = true;
-        let mut remaining_bit_count = l.bit_count();
-        for b in l.data().iter() {
-            assert!(has_more_bytes);
-            byte_buffer |= b >> byte_buffer_len;
-            if byte_buffer_len + remaining_bit_count >= 8 {
-                bytes_written += bw.write(&[byte_buffer]).map_err(|e| e.to_string())?;
-
-                byte_buffer = safe_overflow_leftshift(*b, 8 - byte_buffer_len);
-                if remaining_bit_count > 8 {
-                    remaining_bit_count -= 8;
-                } else {
-                    byte_buffer_len = (byte_buffer_len + remaining_bit_count) % 8;
-                    remaining_bit_count = 0;
+    fn next_bit(&mut self) -> Option<Result<bool>> {
+        if self.current_bit_offset == 8 {
+            match self.r.next() {
+                None => return None,
+                Some(Err(e)) => return Some(Err(e.to_string())),
+                Some(Ok(b)) => {
+                    self.current_byte = b;
                 }
-            } else {
-                byte_buffer_len += remaining_bit_count;
-                has_more_bytes = false;
             }
+            self.current_bit_offset = 0;
         }
+        let b = Some(Ok(self.current_byte
+            & BIT_HOLE_MASKS[self.current_bit_offset]
+            > 0));
+        self.current_bit_offset += 1;
+        b
     }
-    if byte_buffer_len > 0 {
-        bytes_written += bw.write(&[byte_buffer]).map_err(|e| e.to_string())?;
-    }
-    bw.flush().map_err(|e| e.to_string())?;
-    Ok(bytes_written)
 }
 
 const RIGHT_MASK_7: u8 = 0b1;
@@ -229,7 +228,7 @@ fn safe_overflow_leftshift(b: u8, s: u64) -> u8 {
 }
 
 #[cfg(test)]
-mod text_pack_tests {
+mod pack_tests {
     use super::*;
 
     #[test]
@@ -325,7 +324,7 @@ mod text_pack_tests {
 }
 
 #[cfg(test)]
-mod text_parse_tests {
+mod parse_tests {
     use super::*;
 
     use std::io::Cursor;
