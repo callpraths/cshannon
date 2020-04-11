@@ -35,3 +35,8 @@ reasonable, and readability is prioritized over efficiency.
 * end-to-end decode:
   * Using the coding scheme included in the input, complressed stream is decoded
     back to source token stream, and then to source text via Tokenizerrr.
+
+## Extra credit
+
+* Learn about micro-benchmarks. Write some, make it faster!
+* Leran about fuzz testing. Write some, find bugs!
