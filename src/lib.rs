@@ -1,6 +1,7 @@
 #![feature(associated_type_bounds)]
 
 pub mod code;
+pub mod coder;
 pub mod model;
 pub mod tokens;
 
