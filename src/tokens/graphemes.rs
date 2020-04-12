@@ -3,7 +3,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Token, Tokens};
+use crate::tokens::{Result, Token, Tokens, TokensPacker, TokensUnpacker};
 
 use unicode_segmentation::{self, UnicodeSegmentation};
 
@@ -42,7 +42,7 @@ impl<'a> Tokens<'a> for Graphemes<'a> {
     fn from_text(text: &'a str) -> Self {
         Graphemes(UnicodeSegmentation::graphemes(text, true))
     }
-    fn to_text(self) -> Result<String, String> {
+    fn to_text(self) -> Result<String> {
         Ok(self.0.collect())
     }
 }

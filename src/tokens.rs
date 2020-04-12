@@ -4,6 +4,8 @@ pub mod bytes;
 pub mod graphemes;
 pub mod words;
 
+pub type Result<T> = std::result::Result<T, String>;
+
 /// A single item in the tokenized stream from a string input.
 ///
 /// Tokens may be used as keys in std::collections::HashMap.
@@ -25,5 +27,22 @@ pub trait Tokens<'a>: std::iter::IntoIterator<Item: Token> {
     /// Some Tokens may be lossy for specific text. Thus,
     ///   to_text(from_text(text));
     /// may not be the same as text.
-    fn to_text(self) -> Result<String, String>;
+    fn to_text(self) -> Result<String>;
+}
+
+/// Unpack tokens from a Read'er into a Token iterator.
+pub trait TokensUnpacker<'a, R: std::io::Read>:
+    std::iter::Iterator<Item = Result<<Self as TokensUnpacker<'a, R>>::T>>
+{
+    type T: Token;
+    fn unpack(r: &'a mut R) -> Self;
+}
+
+/// Pack tokens from a Token iterator into a Write'er.
+pub trait TokensPacker {
+    type T: Token;
+    fn pack<I, W>(i: I, w: &mut W) -> Result<usize>
+    where
+        I: std::iter::Iterator<Item = Self::T>,
+        W: std::io::Write;
 }

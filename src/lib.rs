@@ -8,9 +8,9 @@ pub mod tokens;
 use tokens::bytes::Bytes;
 use tokens::graphemes::Graphemes;
 use tokens::words::Words;
-use tokens::Tokens;
+use tokens::{Token, Tokens, TokensPacker, TokensUnpacker};
 
-use std::fs;
+use std::fs::{self, File};
 
 pub fn run(args: clap::ArgMatches) -> Result<(), String> {
     // Safe to use unwrap() because these args are `required`.
@@ -40,4 +40,21 @@ fn compress<'a, T: Tokens<'a>>(input: &'a str) -> Result<String, String> {
 fn decompress(input: &str) -> Result<String, String> {
     println!("Decompressing...");
     Ok(input.to_string())
+}
+
+fn read_write<'a, T, S, D>(input_file: &'a mut File, output_file: &mut File) -> Result<(), String>
+where
+    T: Token,
+    S: TokensPacker<T = T>,
+    D: TokensUnpacker<'a, File, T = T>,
+{
+    let d = D::unpack(input_file);
+    S::pack(
+        d.map(|r| match r {
+            Ok(t) => t,
+            Err(e) => panic!(e),
+        }),
+        output_file,
+    )?;
+    Ok(())
 }
