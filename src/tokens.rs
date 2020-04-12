@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 pub mod bytes;
 pub mod graphemes;
 pub mod words;
@@ -5,10 +7,7 @@ pub mod words;
 /// A single item in the tokenized stream from a string input.
 ///
 /// Tokens may be used as keys in std::collections::HashMap.
-///
-/// TODO: Replace ToString with Debug.
-/// TODO: This trait needs to make up its mind about Copy.
-pub trait Token: ToString + Eq + std::hash::Hash {
+pub trait Token: Copy + Display + Eq + std::hash::Hash {
     // The number of bits of source text contained in this Token.
     fn bit_count(&self) -> usize;
 }

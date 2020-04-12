@@ -7,7 +7,7 @@ use crate::tokens::{Token, Tokens};
 use std::fmt;
 use std::hash::Hash;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Byte(u8);
 
 impl std::fmt::Display for Byte {
