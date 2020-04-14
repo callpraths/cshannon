@@ -7,7 +7,7 @@ use std::fmt;
 use std::hash::Hash;
 use std::io::Write;
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Byte(u8);
 
 impl std::fmt::Display for Byte {

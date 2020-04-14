@@ -12,7 +12,7 @@ use unicode_segmentation::{self, UnicodeSegmentation};
 use std::fmt;
 use std::hash::Hash;
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Word<'a>(&'a str);
 
 impl std::fmt::Display for Word<'_> {
