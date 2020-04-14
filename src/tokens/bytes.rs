@@ -2,7 +2,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Result, Token, Tokens, TokensPacker, TokensUnpacker};
+use crate::tokens::{Result, Token, TokenIter, Tokens};
 use std::fmt;
 use std::hash::Hash;
 use std::io::Write;
@@ -46,16 +46,17 @@ impl<'a> Tokens<'a> for Bytes<'a> {
     }
 }
 
-pub struct BytesUnpacker<'a, R: std::io::Read>(&'a mut R);
-
-impl<'a, R: std::io::Read> TokensUnpacker<'a, R> for BytesUnpacker<'a, R> {
-    type T = Byte;
-    fn unpack(r: &'a mut R) -> Self {
-        BytesUnpacker(r)
-    }
+pub fn unpack<'a, R: std::io::Read>(r: &'a mut R) -> impl TokenIter<'a, T = Byte> {
+    BytesIter::<'a, R>(r)
 }
 
-impl<R: std::io::Read> std::iter::Iterator for BytesUnpacker<'_, R> {
+pub struct BytesIter<'a, R: std::io::Read>(&'a mut R);
+
+impl<'a, R: std::io::Read> TokenIter<'a> for BytesIter<'a, R> {
+    type T = Byte;
+}
+
+impl<R: std::io::Read> std::iter::Iterator for BytesIter<'_, R> {
     type Item = Result<Byte>;
     fn next(&mut self) -> Option<Self::Item> {
         let mut buf: [u8; 1] = [0; 1];
@@ -68,37 +69,31 @@ impl<R: std::io::Read> std::iter::Iterator for BytesUnpacker<'_, R> {
     }
 }
 
-pub struct BytesPacker();
-
-impl TokensPacker for BytesPacker {
-    type T = Byte;
-
-    fn pack<I, W>(i: I, w: &mut W) -> Result<usize>
-    where
-        I: std::iter::Iterator<Item = Self::T>,
-        W: std::io::Write,
-    {
-        let mut written: usize = 0;
-        let mut bw = std::io::BufWriter::new(w);
-        let mut buf: [u8; 1] = [0; 1];
-        for b in i {
-            loop {
-                buf[0] = b.0;
-                match bw.write(&buf[..]) {
-                    Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
-                    Err(e) => return Err(e.to_string()),
-                    Ok(0) => {}
-                    Ok(1) => {
-                        written += 1;
-                        break;
-                    }
-                    Ok(l) => panic!("wrote {} bytes from size 1 buffer", l),
+pub fn pack<I, W>(i: I, w: &mut W) -> Result<usize>
+where
+    I: std::iter::Iterator<Item = Byte>,
+    W: std::io::Write,
+{
+    let mut written: usize = 0;
+    let mut bw = std::io::BufWriter::new(w);
+    let mut buf: [u8; 1] = [0; 1];
+    for b in i {
+        loop {
+            buf[0] = b.0;
+            match bw.write(&buf[..]) {
+                Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
+                Err(e) => return Err(e.to_string()),
+                Ok(0) => {}
+                Ok(1) => {
+                    written += 1;
+                    break;
                 }
+                Ok(l) => panic!("wrote {} bytes from size 1 buffer", l),
             }
         }
-        bw.flush().map_err(|e| e.to_string())?;
-        Ok(written)
     }
+    bw.flush().map_err(|e| e.to_string())?;
+    Ok(written)
 }
 
 #[cfg(test)]
@@ -115,13 +110,13 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = BytesUnpacker::unpack(&mut r);
+        let d = unpack(&mut r);
         let i = d.map(|i| match i {
             Err(e) => panic!(e),
             Ok(b) => b,
         });
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
-        BytesPacker::pack(i, &mut wc).unwrap();
+        pack(i, &mut wc).unwrap();
         let got = std::str::from_utf8(&wc.get_ref()[..]).unwrap();
         assert_eq!(got, TEXT);
     }

@@ -3,7 +3,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Result, Token, Tokens, TokensPacker, TokensUnpacker};
+use crate::tokens::{Result, Token, Tokens};
 
 use unicode_segmentation::{self, UnicodeSegmentation};
 

@@ -30,19 +30,6 @@ pub trait Tokens<'a>: std::iter::IntoIterator<Item: Token> {
     fn to_text(self) -> Result<String>;
 }
 
-/// Unpack tokens from a Read'er into a Token iterator.
-pub trait TokensUnpacker<'a, R: std::io::Read>:
-    std::iter::Iterator<Item = Result<<Self as TokensUnpacker<'a, R>>::T>>
-{
+pub trait TokenIter<'a>: std::iter::Iterator<Item = Result<<Self as TokenIter<'a>>::T>> {
     type T: Token;
-    fn unpack(r: &'a mut R) -> Self;
-}
-
-/// Pack tokens from a Token iterator into a Write'er.
-pub trait TokensPacker {
-    type T: Token;
-    fn pack<I, W>(i: I, w: &mut W) -> Result<usize>
-    where
-        I: std::iter::Iterator<Item = Self::T>,
-        W: std::io::Write;
 }
