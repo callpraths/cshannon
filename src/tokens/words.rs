@@ -5,15 +5,23 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Token, Tokens};
+use super::string_parts;
+use crate::tokens::{Token, TokenIter, Tokens};
 
 use unicode_segmentation::{self, UnicodeSegmentation};
 
+use std::convert::From;
 use std::fmt;
 use std::hash::Hash;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Word(String);
+
+impl From<String> for Word {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
 
 impl std::fmt::Display for Word {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -51,4 +59,8 @@ impl<'a> Tokens<'a> for Words<'a> {
             .collect::<Vec<String>>()
             .join(" "))
     }
+}
+
+pub fn unpack<R: std::io::Read>(r: &mut R) -> impl TokenIter<T = Word> {
+    string_parts::unpack::<Word, R>(r)
 }
