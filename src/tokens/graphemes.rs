@@ -3,15 +3,23 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
+use super::string_parts;
 use crate::tokens::{Result, Token, TokenIter, Tokens};
 
 use unicode_segmentation::{self, UnicodeSegmentation};
 
+use std::convert::From;
 use std::fmt;
 use std::hash::Hash;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Grapheme(String);
+
+impl From<String> for Grapheme {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
 
 impl std::fmt::Display for Grapheme {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -48,56 +56,5 @@ impl<'a> Tokens<'a> for Graphemes<'a> {
 }
 
 pub fn unpack<R: std::io::Read>(r: &mut R) -> impl TokenIter<T = Grapheme> {
-    GraphemeIter::new(r)
-}
-
-pub struct GraphemeIter(Option<Result<std::vec::IntoIter<Grapheme>>>);
-
-impl GraphemeIter {
-    fn new<R>(r: &mut R) -> Self
-    where
-        R: std::io::Read,
-    {
-        let mut data = Vec::<u8>::new();
-        if let Err(e) = r.read_to_end(&mut data) {
-            return GraphemeIter(Some(Err(e.to_string())));
-        }
-        match std::str::from_utf8(&data) {
-            Err(e) => GraphemeIter(Some(Err(e.to_string()))),
-            Ok(s) => {
-                let mut parts = Vec::<Grapheme>::new();
-                for g in s.graphemes(true) {
-                    parts.push(Grapheme(g.to_owned()));
-                }
-                GraphemeIter(Some(Ok(parts.into_iter())))
-            }
-        }
-    }
-}
-
-impl TokenIter<'_> for GraphemeIter {
-    type T = Grapheme;
-}
-
-impl<'a> std::iter::Iterator for GraphemeIter {
-    type Item = Result<Grapheme>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut store = None;
-        std::mem::swap(&mut self.0, &mut store);
-        let result = match &mut store {
-            None => {
-                return None;
-            }
-            Some(n) => match n {
-                Err(e) => return Some(Err((*e).to_string())),
-                Ok(i) => match i.next() {
-                    None => None,
-                    Some(g) => Some(Ok(g)),
-                },
-            },
-        };
-        std::mem::swap(&mut store, &mut self.0);
-        result
-    }
+    string_parts::unpack::<Grapheme, R>(r)
 }

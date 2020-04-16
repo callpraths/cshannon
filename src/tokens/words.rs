@@ -13,15 +13,15 @@ use std::fmt;
 use std::hash::Hash;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Word<'a>(&'a str);
+pub struct Word(String);
 
-impl std::fmt::Display for Word<'_> {
+impl std::fmt::Display for Word {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }
 
-impl Token for Word<'_> {
+impl Token for Word {
     fn bit_count(&self) -> usize {
         self.0.len() * 8
     }
@@ -30,11 +30,11 @@ impl Token for Word<'_> {
 pub struct Words<'a>(unicode_segmentation::UnicodeWords<'a>);
 
 impl<'a> Iterator for Words<'a> {
-    type Item = Word<'a>;
+    type Item = Word;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.0.next() {
-            Some(b) => Some(Word(b)),
+            Some(b) => Some(Word(b.to_owned())),
             None => None,
         }
     }
