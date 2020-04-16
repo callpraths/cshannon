@@ -8,7 +8,7 @@ use crate::tokens::{Result, Token, TokenIter, Tokens};
 
 use unicode_segmentation::{self, UnicodeSegmentation};
 
-use std::convert::From;
+use std::convert::{From, Into};
 use std::fmt;
 use std::hash::Hash;
 
@@ -18,6 +18,12 @@ pub struct Grapheme(String);
 impl From<String> for Grapheme {
     fn from(s: String) -> Self {
         Self(s)
+    }
+}
+
+impl Into<String> for Grapheme {
+    fn into(self) -> String {
+        self.0
     }
 }
 
@@ -57,4 +63,12 @@ impl<'a> Tokens<'a> for Graphemes<'a> {
 
 pub fn unpack<R: std::io::Read>(r: &mut R) -> impl TokenIter<T = Grapheme> {
     string_parts::unpack::<Grapheme, R>(r)
+}
+
+pub fn pack<I, W>(i: I, w: &mut W) -> Result<()>
+where
+    I: std::iter::Iterator<Item = Grapheme>,
+    W: std::io::Write,
+{
+    string_parts::pack::<Grapheme, I, W>(i, w)
 }

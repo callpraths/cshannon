@@ -3,7 +3,8 @@
 use crate::tokens::{Result, Token, TokenIter};
 use unicode_segmentation::{self, UnicodeSegmentation};
 
-use std::convert::From;
+use std::convert::{From, Into};
+use std::io::Write;
 
 pub fn unpack<S, R>(r: &mut R) -> impl TokenIter<T = S>
 where
@@ -73,4 +74,21 @@ where
         std::mem::swap(&mut store, &mut self.0);
         result
     }
+}
+
+pub fn pack<S, I, W>(i: I, w: &mut W) -> Result<()>
+where
+    S: Into<String> + Token,
+    I: std::iter::Iterator<Item = S>,
+    W: std::io::Write,
+{
+    let mut bw = std::io::BufWriter::new(w);
+    for s in i {
+        let buf: String = s.into();
+        if let Err(e) = bw.write_all(buf.as_bytes()) {
+            return Err(e.to_string());
+        }
+    }
+    bw.flush().map_err(|e| e.to_string())?;
+    Ok(())
 }
