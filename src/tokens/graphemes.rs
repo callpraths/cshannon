@@ -12,8 +12,26 @@ use std::convert::{From, Into};
 use std::fmt;
 use std::hash::Hash;
 
+/// A `Token` consisting of a Unicode Grapheme.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Grapheme(String);
+
+/// Pack an iterator of `Grapheme`s to a `Write`er.
+pub fn pack<I, W>(i: I, w: &mut W) -> Result<()>
+where
+    I: std::iter::Iterator<Item = Grapheme>,
+    W: std::io::Write,
+{
+    string_parts::pack::<Grapheme, I, W>(i, w)
+}
+
+/// Unpack `Grapheme`s from a `Read`er into a `TokenIter`.
+pub fn unpack<R: std::io::Read>(r: &mut R) -> impl TokenIter<T = Grapheme> {
+    string_parts::unpack::<Grapheme, R>(r)
+}
+
+/// Deprecated Tokens implementation for Grapheme.
+pub struct Graphemes<'a>(unicode_segmentation::Graphemes<'a>);
 
 impl From<String> for Grapheme {
     fn from(s: String) -> Self {
@@ -39,8 +57,6 @@ impl Token for Grapheme {
     }
 }
 
-pub struct Graphemes<'a>(unicode_segmentation::Graphemes<'a>);
-
 impl<'a> Iterator for Graphemes<'a> {
     type Item = Grapheme;
 
@@ -61,14 +77,28 @@ impl<'a> Tokens<'a> for Graphemes<'a> {
     }
 }
 
-pub fn unpack<R: std::io::Read>(r: &mut R) -> impl TokenIter<T = Grapheme> {
-    string_parts::unpack::<Grapheme, R>(r)
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
 
-pub fn pack<I, W>(i: I, w: &mut W) -> Result<()>
-where
-    I: std::iter::Iterator<Item = Grapheme>,
-    W: std::io::Write,
-{
-    string_parts::pack::<Grapheme, I, W>(i, w)
+    const TEXT: &str = "
+Ah! well a-day! what evil looks
+Had I from old and young!
+Instead of the cross, the Albatross
+About my neck was hung.
+";
+    #[test]
+    fn roundtrip() {
+        let mut r = Cursor::new(TEXT);
+        let d = unpack(&mut r);
+        let i = d.map(|i| match i {
+            Err(e) => panic!(e),
+            Ok(b) => b,
+        });
+        let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
+        pack(i, &mut wc).unwrap();
+        let got = std::str::from_utf8(&wc.get_ref()[..]).unwrap();
+        assert_eq!(got, TEXT);
+    }
 }

@@ -31,6 +31,11 @@ pub trait Tokens<'a>: std::iter::IntoIterator<Item: Token> {
     fn to_text(self) -> Result<String>;
 }
 
+/// An iterator for Tokens read from a Read'er.
+///
+/// Errors in reading tokens are reported in-stream.
+/// All token implementations return TokenIter from respective unpack()
+/// functions.
 pub trait TokenIter<'a>: std::iter::Iterator<Item = Result<<Self as TokenIter<'a>>::T>> {
     type T: Token;
 }
