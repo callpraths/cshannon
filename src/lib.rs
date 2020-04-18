@@ -5,12 +5,12 @@ pub mod coder;
 pub mod model;
 pub mod tokens;
 
-use tokens::bytes::Bytes;
-use tokens::graphemes::Graphemes;
-use tokens::words::Words;
-use tokens::Tokens;
+use tokens::bytes::{Byte, ByteIter, BytePacker};
+use tokens::graphemes::{Grapheme, GraphemeIter, GraphemePacker};
+use tokens::words::{Word, WordIter, WordPacker};
+use tokens::{Token, TokenIter, TokenPacker};
 
-use std::fs;
+use std::fs::{self, File};
 
 pub fn run(args: clap::ArgMatches) -> Result<(), String> {
     // Safe to use unwrap() because these args are `required`.
@@ -18,26 +18,54 @@ pub fn run(args: clap::ArgMatches) -> Result<(), String> {
     let output_file = args.value_of("output_file").unwrap();
     let tokenizer_choice = args.value_of("tokenizer").unwrap();
 
-    let input = fs::read_to_string(input_file).map_err(|e| e.to_string())?;
-    let output = match args.subcommand_name() {
+    match args.subcommand_name() {
         Some("compress") => match tokenizer_choice {
-            "byte" => compress::<Bytes>(&input),
-            "grapheme" => compress::<Graphemes>(&input),
-            "word" => compress::<Words>(&input),
+            "byte" => compress::<Byte, ByteIter<File>, BytePacker>(&input_file, &output_file),
+            "grapheme" => {
+                compress::<Grapheme, GraphemeIter, GraphemePacker>(&input_file, &output_file)
+            }
+            "word" => compress::<Word, WordIter, WordPacker>(&input_file, &output_file),
             _ => Err(format!("invalid tokenizer {}", tokenizer_choice)),
         },
-        Some("decompress") => decompress(&input),
+        Some("decompress") => decompress(&input_file, &output_file),
         _ => Err("no sub-command selected".to_string()),
-    }?;
-    fs::write(output_file, output).map_err(|e| e.to_string())
+    }
 }
 
-fn compress<'a, T: Tokens<'a>>(input: &'a str) -> Result<String, String> {
+fn compress<T, TIter, TPacker>(input_file: &str, output_file: &str) -> Result<(), String>
+where
+    T: Token,
+    TIter: TokenIter<File, T = T>,
+    TPacker: TokenPacker<File, T = T>,
+{
     println!("Compressing...");
-    T::from_text(input).to_text()
+    let r = File::open(input_file).map_err(|e| e.to_string())?;
+    let mut w = File::create(output_file).map_err(|e| e.to_string())?;
+    pack::<_, _, TPacker>(unpack::<T, TIter>(r).map(|r| r.unwrap()), &mut w)
 }
 
-fn decompress(input: &str) -> Result<String, String> {
+fn decompress(input_file: &str, output_file: &str) -> Result<(), String> {
     println!("Decompressing...");
-    Ok(input.to_string())
+    fs::write(
+        output_file,
+        fs::read_to_string(input_file).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())
+}
+
+fn unpack<T, TIter>(r: File) -> impl TokenIter<File, T = T>
+where
+    T: Token,
+    TIter: TokenIter<File, T = T>,
+{
+    TIter::unpack(r)
+}
+
+fn pack<T, I, TPacker>(i: I, w: &mut File) -> Result<(), String>
+where
+    T: Token,
+    I: std::iter::Iterator<Item = T>,
+    TPacker: TokenPacker<File, T = T>,
+{
+    TPacker::pack(i, w)
 }

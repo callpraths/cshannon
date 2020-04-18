@@ -15,27 +15,27 @@ pub trait Token: Display + Eq + std::hash::Hash {
     fn bit_count(&self) -> usize;
 }
 
-/// A stream of Tokens corresponding to a raw string input.
-///
-/// TODO: Replace from_text and to_text with Read and Write
-/// TODO: Callers actually just care about FromIterator and IntoIterator
-///       Consider replacing this trait with generic functions:
-///          Read -> IntoIterator and FromIterator -> Write
-pub trait Tokens<'a>: std::iter::IntoIterator<Item: Token> {
-    fn from_text(text: &'a str) -> Self;
-    /// Convert back to text that would tokenize to this Token stream.
-    ///
-    /// Some Tokens may be lossy for specific text. Thus,
-    ///   to_text(from_text(text));
-    /// may not be the same as text.
-    fn to_text(self) -> Result<String>;
-}
-
-/// An iterator for Tokens read from a Read'er.
+/// An iterator for `Token`s read from a `Read`er.
 ///
 /// Errors in reading tokens are reported in-stream.
-/// All token implementations return TokenIter from respective unpack()
+/// All token implementations return TokenIter from the associated unpack()
 /// functions.
-pub trait TokenIter<'a>: std::iter::Iterator<Item = Result<<Self as TokenIter<'a>>::T>> {
+pub trait TokenIter<R>: std::iter::Iterator<Item = Result<<Self as TokenIter<R>>::T>>
+where
+    R: std::io::Read,
+{
     type T: Token;
+
+    fn unpack(r: R) -> Self;
+}
+
+pub trait TokenPacker<W>
+where
+    W: std::io::Write,
+{
+    type T: Token;
+
+    fn pack<I>(i: I, w: &mut W) -> Result<()>
+    where
+        I: std::iter::Iterator<Item = Self::T>;
 }

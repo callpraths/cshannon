@@ -4,9 +4,7 @@
 //! The stream makes zero copies internally while iterating over the stream.
 
 use super::string_parts;
-use crate::tokens::{Result, Token, TokenIter, Tokens};
-
-use unicode_segmentation::{self, UnicodeSegmentation};
+use crate::tokens::Token;
 
 use std::convert::{From, Into};
 use std::fmt;
@@ -16,22 +14,11 @@ use std::hash::Hash;
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Grapheme(String);
 
-/// Pack an iterator of `Grapheme`s to a `Write`er.
-pub fn pack<I, W>(i: I, w: &mut W) -> Result<()>
-where
-    I: std::iter::Iterator<Item = Grapheme>,
-    W: std::io::Write,
-{
-    string_parts::pack::<Grapheme, I, W>(i, w)
-}
+/// An iterator for `Grapheme`s read from a `Read`er.
+pub type GraphemeIter = string_parts::StringPartsIter<Grapheme>;
 
-/// Unpack `Grapheme`s from a `Read`er into a `TokenIter`.
-pub fn unpack<R: std::io::Read>(r: &mut R) -> impl TokenIter<T = Grapheme> {
-    string_parts::unpack::<Grapheme, R>(r)
-}
-
-/// Deprecated Tokens implementation for Grapheme.
-pub struct Graphemes<'a>(unicode_segmentation::Graphemes<'a>);
+/// A `TokenPacker` for packing `Grapheme`s.
+pub type GraphemePacker = string_parts::StringPartsPacker<Grapheme>;
 
 impl From<String> for Grapheme {
     fn from(s: String) -> Self {
@@ -57,28 +44,9 @@ impl Token for Grapheme {
     }
 }
 
-impl<'a> Iterator for Graphemes<'a> {
-    type Item = Grapheme;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.0.next() {
-            Some(b) => Some(Grapheme(b.to_owned())),
-            None => None,
-        }
-    }
-}
-
-impl<'a> Tokens<'a> for Graphemes<'a> {
-    fn from_text(text: &'a str) -> Self {
-        Graphemes(UnicodeSegmentation::graphemes(text, true))
-    }
-    fn to_text(self) -> Result<String> {
-        Ok(self.0.collect())
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use super::super::{TokenIter, TokenPacker};
     use super::*;
     use std::io::Cursor;
 
@@ -91,13 +59,10 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = unpack(&mut r);
-        let i = d.map(|i| match i {
-            Err(e) => panic!(e),
-            Ok(b) => b,
-        });
+        let d = GraphemeIter::unpack(&mut r);
+        let i = d.map(|t| t.unwrap());
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
-        pack(i, &mut wc).unwrap();
+        GraphemePacker::pack(i, &mut wc).unwrap();
         let got = std::str::from_utf8(&wc.get_ref()[..]).unwrap();
         assert_eq!(got, TEXT);
     }

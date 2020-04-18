@@ -2,7 +2,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Result, Token, TokenIter, Tokens};
+use crate::tokens::{Result, Token, TokenIter, TokenPacker};
 use std::fmt;
 use std::hash::Hash;
 use std::io::Write;
@@ -11,31 +11,11 @@ use std::io::Write;
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Byte(u8);
 
-/// Pack an iterator for `Byte`s to a `Write`er.
-pub fn pack<I, W>(i: I, w: &mut W) -> Result<()>
-where
-    I: std::iter::Iterator<Item = Byte>,
-    W: std::io::Write,
-{
-    let mut bw = std::io::BufWriter::new(w);
-    let mut buf: [u8; 1] = [0; 1];
-    for b in i {
-        buf[0] = b.0;
-        if let Err(e) = bw.write_all(&buf[..]) {
-            return Err(e.to_string());
-        }
-    }
-    bw.flush().map_err(|e| e.to_string())?;
-    Ok(())
-}
+/// An iterator for `Byte`s read from a `Read`er.
+pub struct ByteIter<R: std::io::Read>(R);
 
-/// Unpack `Byte`s from a `Read`er into a `TokenIter`.
-pub fn unpack<'a, R: std::io::Read>(r: &'a mut R) -> impl TokenIter<'a, T = Byte> {
-    BytesIter::<'a, R>(r)
-}
-
-/// Deprecated Tokens implementation for Byte.
-pub struct Bytes<'a>(std::str::Bytes<'a>);
+/// A `TokenPacker` for packing `Byte`s.
+pub struct BytePacker();
 
 impl std::fmt::Display for Byte {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -49,35 +29,15 @@ impl Token for Byte {
     }
 }
 
-impl std::iter::Iterator for Bytes<'_> {
-    type Item = Byte;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.0.next() {
-            Some(b) => Some(Byte(b)),
-            None => None,
-        }
-    }
-}
-
-impl<'a> Tokens<'a> for Bytes<'a> {
-    fn from_text(text: &'a str) -> Self {
-        Bytes(text.bytes())
-    }
-    fn to_text(self) -> Result<String> {
-        let b: Vec<u8> = self.0.collect();
-        let s = std::str::from_utf8(&b).map_err(|e| e.to_string())?;
-        Ok(s.to_string())
-    }
-}
-
-struct BytesIter<'a, R: std::io::Read>(&'a mut R);
-
-impl<'a, R: std::io::Read> TokenIter<'a> for BytesIter<'a, R> {
+impl<'b, R: std::io::Read> TokenIter<R> for ByteIter<R> {
     type T = Byte;
+
+    fn unpack(r: R) -> Self {
+        Self(r)
+    }
 }
 
-impl<R: std::io::Read> std::iter::Iterator for BytesIter<'_, R> {
+impl<R: std::io::Read> std::iter::Iterator for ByteIter<R> {
     type Item = Result<Byte>;
     fn next(&mut self) -> Option<Self::Item> {
         let mut buf: [u8; 1] = [0; 1];
@@ -87,6 +47,29 @@ impl<R: std::io::Read> std::iter::Iterator for BytesIter<'_, R> {
             Ok(1) => Some(Ok(Byte(buf[0]))),
             Ok(l) => panic!("read {} bytes in 1 byte buffer", l),
         }
+    }
+}
+
+impl<W: std::io::Write> TokenPacker<W> for BytePacker
+where
+    W: std::io::Write,
+{
+    type T = Byte;
+
+    fn pack<I>(i: I, w: &mut W) -> Result<()>
+    where
+        I: std::iter::Iterator<Item = Self::T>,
+    {
+        let mut bw = std::io::BufWriter::new(w);
+        let mut buf: [u8; 1] = [0; 1];
+        for b in i {
+            buf[0] = b.0;
+            if let Err(e) = bw.write_all(&buf[..]) {
+                return Err(e.to_string());
+            }
+        }
+        bw.flush().map_err(|e| e.to_string())?;
+        Ok(())
     }
 }
 
@@ -104,13 +87,10 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = unpack(&mut r);
-        let i = d.map(|i| match i {
-            Err(e) => panic!(e),
-            Ok(b) => b,
-        });
+        let d = ByteIter::unpack(&mut r);
+        let i = d.map(|t| t.unwrap());
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
-        pack(i, &mut wc).unwrap();
+        BytePacker::pack(i, &mut wc).unwrap();
         let got = std::str::from_utf8(&wc.get_ref()[..]).unwrap();
         assert_eq!(got, TEXT);
     }
