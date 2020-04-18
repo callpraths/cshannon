@@ -10,7 +10,7 @@ pub type Result<T> = std::result::Result<T, String>;
 /// A single item in the tokenized stream from a string input.
 ///
 /// Tokens may be used as keys in std::collections::HashMap.
-pub trait Token: Display + Eq + std::hash::Hash {
+pub trait Token: Clone + Display + Eq + std::hash::Hash {
     // The number of bits of source text contained in this Token.
     fn bit_count(&self) -> usize;
 }
