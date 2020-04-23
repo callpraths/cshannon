@@ -4,7 +4,7 @@ use std::convert::TryInto;
 use std::fmt;
 
 /// A Letter represents an indivisible code point.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Letter {
     data: Vec<u8>,
     // TODO: Store as usize
@@ -29,11 +29,23 @@ impl Letter {
     ///
     /// Trailing bits in data (beyond bit_count) are ignored.
     pub fn new(data: &[u8], bit_count: u64) -> Self {
-        Self {
-            data: data.to_vec(),
-            bit_count: bit_count,
+        let num_bytes = (bit_count + 7) as usize / 8;
+        let mut l = Self {
+            data: data[0..num_bytes].to_vec(),
+            bit_count,
+        };
+        if bit_count % 8 == 0 {
+            return l;
         }
+
+        let mut mask: u8 = 0;
+        for i in 0..bit_count % 8 {
+            mask |= BIT_HOLE_MASKS[i as usize];
+        }
+        l.data[num_bytes - 1] &= mask;
+        l
     }
+
     pub fn from_bytes(bytes: &[u8]) -> Self {
         Self::new(bytes, 8 * bytes.len() as u64)
     }
@@ -125,5 +137,19 @@ mod tests {
         assert_eq!(l.at(5).unwrap(), false);
         assert_eq!(l.at(6).unwrap(), true);
         assert!(l.at(7).is_err());
+    }
+
+    #[test]
+    fn new_data_truncation() {
+        assert_eq!(Letter::new(&[0b0111_1100], 3).data(), &vec![0b0110_0000u8]);
+        assert_eq!(
+            Letter::new(&[0b0000_1111, 0b0111_1100], 11).data(),
+            &vec![0b0000_1111u8, 0b0110_0000u8]
+        );
+        assert_eq!(
+            Letter::new(&[0b1000_1111, 0b0111_1100], 3).data(),
+            &vec![0b1000_0000u8]
+        );
+        assert_eq!(Letter::new(&[0b0000_1111], 4).data(), &vec![0b0000_0000u8]);
     }
 }

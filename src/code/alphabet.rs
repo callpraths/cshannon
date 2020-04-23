@@ -3,7 +3,7 @@ use super::letter::{Letter, Peephole as lPeephole};
 use super::types::Result;
 
 /// Alphabet is an ordered list of unique Letters.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Alphabet(Vec<Letter>);
 
 impl Alphabet {
@@ -12,6 +12,14 @@ impl Alphabet {
     /// The order of Letters is significant. pack()/unpack() conserve the order.
     pub fn new(letters: Vec<Letter>) -> Self {
         Alphabet(letters)
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 

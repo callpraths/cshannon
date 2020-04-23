@@ -1,17 +1,18 @@
+use crate::tokens::Token;
 use std::collections::HashMap;
 
 /// A zeroeth order precomputed model for compression.
 ///
 /// The model computes certain Stats on input Tokens that can be useful for
 /// statistical compression techniques.
-pub struct Model<T: Eq + std::hash::Hash>(HashMap<T, Stats>);
+pub struct Model<T: Token>(HashMap<T, Stats>);
 
 struct Stats {
     f: i64,
     p: f64,
 }
 
-impl<T: Eq + std::hash::Hash> Model<T> {
+impl<T: Token> Model<T> {
     /// Frequency of occurrence of the key t.
     pub fn frequency(&self, t: &T) -> i64 {
         match self.0.get(t) {
@@ -27,12 +28,31 @@ impl<T: Eq + std::hash::Hash> Model<T> {
             None => 0.0,
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Returns a vector of `Token`'s in the map, sorted by relative
+    /// frequencies, highest first.
+    pub fn tokens_sorted(&self) -> Vec<T> {
+        let mut keys = Vec::with_capacity(self.0.len());
+        for k in self.0.keys() {
+            keys.push((*k).clone());
+        }
+        keys.sort_unstable_by(|x, y| self.frequency(y).cmp(&self.frequency(x)));
+        keys
+    }
 }
 
 /// Generate a zeroeth order model from the given Tokens.
 pub fn from<T, TS>(ts: TS) -> Model<T>
 where
-    T: Eq + std::hash::Hash,
+    T: Token,
     TS: std::iter::IntoIterator<Item = T>,
 {
     let mut m = Model::<T>(HashMap::new());
@@ -42,8 +62,23 @@ where
         (*s).f += 1;
         d += 1;
     }
-    for (_, s) in &mut m.0 {
+    for s in m.0.values_mut() {
         (*s).p = ((*s).f as f64) / (d as f64);
+    }
+    m
+}
+
+pub fn with_frequencies<T: Token>(fs: HashMap<T, i64>) -> Model<T> {
+    let total = fs.values().sum::<i64>() as f64;
+    let mut m = Model::<T>(HashMap::new());
+    for (t, f) in fs.into_iter() {
+        m.0.insert(
+            t,
+            Stats {
+                f,
+                p: (f as f64) / total,
+            },
+        );
     }
     m
 }
@@ -51,17 +86,48 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tokens::test_utils::I32Token;
 
     #[test]
     fn basic() {
-        let tokens = vec![2, 3, 1, 2, 5, 11];
+        let tokens = vec![
+            I32Token(2),
+            I32Token(3),
+            I32Token(1),
+            I32Token(2),
+            I32Token(5),
+            I32Token(11),
+        ];
         let m = from(tokens);
-        assert_eq!(m.frequency(&1), 1);
-        assert_eq!(m.frequency(&2), 2);
-        assert_eq!(m.frequency(&13), 0);
+        assert_eq!(m.frequency(&I32Token(1)), 1);
+        assert_eq!(m.frequency(&I32Token(2)), 2);
+        assert_eq!(m.frequency(&I32Token(13)), 0);
 
         // f64 equality is inexact.
-        assert!(m.probability(&5) > 0.166);
-        assert!(m.probability(&5) < 0.167);
+        assert!(m.probability(&I32Token(5)) > 0.166);
+        assert!(m.probability(&I32Token(5)) < 0.167);
+    }
+
+    #[test]
+    fn with_frequencies() {
+        let m = super::with_frequencies(
+            [
+                (I32Token(2), 2),
+                (I32Token(3), 1),
+                (I32Token(1), 1),
+                (I32Token(5), 1),
+                (I32Token(11), 1),
+            ]
+            .iter()
+            .cloned()
+            .collect(),
+        );
+        assert_eq!(m.frequency(&I32Token(1)), 1);
+        assert_eq!(m.frequency(&I32Token(2)), 2);
+        assert_eq!(m.frequency(&I32Token(13)), 0);
+
+        // f64 equality is inexact.
+        assert!(m.probability(&I32Token(5)) > 0.166);
+        assert!(m.probability(&I32Token(5)) < 0.167);
     }
 }

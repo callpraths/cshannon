@@ -2,6 +2,7 @@
 
 pub mod code;
 pub mod coder;
+pub mod encoding;
 pub mod model;
 pub mod tokens;
 

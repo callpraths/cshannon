@@ -3,6 +3,7 @@ use std::fmt::Display;
 pub mod bytes;
 pub mod graphemes;
 mod string_parts;
+pub mod test_utils;
 pub mod words;
 
 pub type Result<T> = std::result::Result<T, String>;
