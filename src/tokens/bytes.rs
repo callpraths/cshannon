@@ -5,7 +5,6 @@
 use crate::tokens::{Result, Token, TokenIter, TokenPacker};
 use std::fmt;
 use std::hash::Hash;
-use std::io::Write;
 
 /// A `Token` consisting of a single byte of data.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -60,15 +59,14 @@ where
     where
         I: std::iter::Iterator<Item = Self::T>,
     {
-        let mut bw = std::io::BufWriter::new(w);
         let mut buf: [u8; 1] = [0; 1];
         for b in i {
             buf[0] = b.0;
-            if let Err(e) = bw.write_all(&buf[..]) {
+            if let Err(e) = w.write_all(&buf[..]) {
                 return Err(e.to_string());
             }
         }
-        bw.flush().map_err(|e| e.to_string())?;
+        w.flush().map_err(|e| e.to_string())?;
         Ok(())
     }
 }

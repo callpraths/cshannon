@@ -4,7 +4,6 @@ use crate::tokens::{Result, Token, TokenIter, TokenPacker};
 use unicode_segmentation::{self, UnicodeSegmentation};
 
 use std::convert::{From, Into};
-use std::io::Write;
 use std::marker::PhantomData;
 
 pub struct StringPartsIter<S>(Option<Result<std::vec::IntoIter<S>>>)
@@ -89,14 +88,13 @@ where
     where
         I: std::iter::Iterator<Item = Self::T>,
     {
-        let mut bw = std::io::BufWriter::new(w);
         for s in i {
             let buf: String = s.into();
-            if let Err(e) = bw.write_all(buf.as_bytes()) {
+            if let Err(e) = w.write_all(buf.as_bytes()) {
                 return Err(e.to_string());
             }
         }
-        bw.flush().map_err(|e| e.to_string())?;
+        w.flush().map_err(|e| e.to_string())?;
         Ok(())
     }
 }

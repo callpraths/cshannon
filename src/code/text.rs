@@ -2,8 +2,6 @@ use super::alphabet::{Alphabet, Node, Peephole as aPeephole};
 use super::common::BIT_HOLE_MASKS;
 use super::letter::{Letter, Peephole as lPeephole};
 use super::types::Result;
-use std::io::Read;
-use std::io::Write;
 use std::u64;
 
 /// Write a packed stream of letters.
@@ -15,7 +13,6 @@ where
     W: std::io::Write,
 {
     let mut bytes_written: usize = 0;
-    let mut bw = std::io::BufWriter::new(w);
     let mut byte_buffer_len: u64 = 0; // In practice <= 7
     let mut byte_buffer: u8 = 0;
     for l in letters {
@@ -25,7 +22,7 @@ where
             assert!(has_more_bytes);
             byte_buffer |= b >> byte_buffer_len;
             if byte_buffer_len + remaining_bit_count >= 8 {
-                bytes_written += bw.write(&[byte_buffer]).map_err(|e| e.to_string())?;
+                bytes_written += w.write(&[byte_buffer]).map_err(|e| e.to_string())?;
 
                 byte_buffer = safe_overflow_leftshift(*b, 8 - byte_buffer_len);
                 if remaining_bit_count > 8 {
@@ -41,9 +38,9 @@ where
         }
     }
     if byte_buffer_len > 0 {
-        bytes_written += bw.write(&[byte_buffer]).map_err(|e| e.to_string())?;
+        bytes_written += w.write(&[byte_buffer]).map_err(|e| e.to_string())?;
     }
-    bw.flush().map_err(|e| e.to_string())?;
+    w.flush().map_err(|e| e.to_string())?;
     Ok(bytes_written)
 }
 
@@ -70,7 +67,7 @@ struct TextParserState<R>
 where
     R: std::io::Read,
 {
-    r: std::io::Bytes<std::io::BufReader<R>>,
+    r: std::io::Bytes<R>,
     current_byte: u8,
     current_bit_offset: usize,
     eof: bool,
@@ -84,7 +81,7 @@ where
         TextParser {
             root: root,
             state: TextParserState {
-                r: std::io::BufReader::new(r).bytes(),
+                r: r.bytes(),
                 current_byte: 0,
                 current_bit_offset: 8,
                 eof: false,
