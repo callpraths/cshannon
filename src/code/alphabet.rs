@@ -70,7 +70,7 @@ pub trait Peephole {
 
 impl Peephole for Alphabet {
     fn tree<'a>(&'a self) -> Result<Node<'a>> {
-        if self.0.len() == 0 {
+        if self.0.is_empty() {
             return Err("no letters".to_owned());
         }
         let mut root = Node::Internal {
