@@ -71,7 +71,7 @@ pub trait Peephole {
     fn data<'a>(&'a self) -> &'a Vec<u8>;
     fn bit_count(&self) -> u64;
     fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()>;
-    fn unpack(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<Self, String>
+    fn unpack<R: std::io::Read>(r: R) -> core::result::Result<Self, String>
     where
         Self: Sized;
 }
@@ -91,33 +91,12 @@ impl Peephole for Letter {
         w.write_all(&self.data).map_err(|e| e.to_string())
     }
 
-    fn unpack(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<Self, String> {
-        let bit_count = unpack_u64(iter)?;
-        let data = Letter::unpack_data(iter, bit_count)?;
-        Ok(Self {
-            bit_count: bit_count,
-            data: data,
-        })
-    }
-}
-
-impl Letter {
-    fn unpack_data(
-        iter: &mut std::vec::IntoIter<u8>,
-        bit_count: u64,
-    ) -> core::result::Result<Vec<u8>, String> {
+    fn unpack<R: std::io::Read>(mut r: R) -> core::result::Result<Self, String> {
+        let bit_count = unpack_u64(&mut r)?;
         let byte_count = (bit_count + 7) / 8;
-        let mut data = Vec::with_capacity(byte_count.try_into().unwrap());
-        for _ in 0..byte_count {
-            match iter.next() {
-                Some(d) => {
-                    let dd = d;
-                    data.push(dd);
-                }
-                None => return Err("too few elements".to_owned()),
-            }
-        }
-        Ok(data)
+        let mut data = vec![0u8; byte_count.try_into().unwrap()];
+        r.read_exact(&mut data).map_err(|e| e.to_string())?;
+        Ok(Self { bit_count, data })
     }
 }
 

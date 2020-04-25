@@ -15,13 +15,8 @@ pub fn pack_u64(s: u64) -> Vec<u8> {
     s.to_be_bytes().to_vec()
 }
 
-pub fn unpack_u64(iter: &mut std::vec::IntoIter<u8>) -> Result<u64> {
+pub fn unpack_u64<R: std::io::Read>(mut r: R) -> Result<u64> {
     let mut buf: [u8; 8] = [0; 8];
-    for i in 0..8 {
-        match iter.next() {
-            Some(u) => buf[i] = u,
-            None => return Err("too few elements".to_owned()),
-        }
-    }
+    r.read_exact(&mut buf).map_err(|e| e.to_string())?;
     Ok(u64::from_be_bytes(buf))
 }

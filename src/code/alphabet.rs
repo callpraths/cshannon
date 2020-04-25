@@ -50,13 +50,12 @@ impl Alphabet {
         Ok(())
     }
 
-    /// Deserialize a vector of bytes generated with pack().
-    pub fn unpack(data: Vec<u8>) -> Result<Self> {
-        let mut iter = data.into_iter();
-        let letter_count = unpack_u64(&mut iter)?;
+    /// Deserialize a data generated with `pack()` from a `Read`er.
+    pub fn unpack<R: std::io::Read>(mut r: R) -> Result<Self> {
+        let letter_count = unpack_u64(&mut r)?;
         let mut letters = Vec::new();
         for _ in 0..letter_count {
-            let l = Letter::unpack(&mut iter)?;
+            let l = Letter::unpack(&mut r)?;
             letters.push(l);
         }
         Ok(Alphabet(letters))
@@ -187,13 +186,14 @@ impl Node<'_> {
 #[cfg(test)]
 mod pack_tests {
     use super::*;
+    use std::io::Cursor;
 
     #[test]
     fn roundtrip_trivial() {
         let a = Alphabet::new(vec![]);
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
-        let got = Alphabet::unpack(packed).unwrap();
+        let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
         assert_eq!(got.0.len(), 0);
     }
 
@@ -203,7 +203,7 @@ mod pack_tests {
         let a = Alphabet::new(v.clone());
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
-        let got = Alphabet::unpack(packed).unwrap();
+        let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
         assert_eq!(got.0, v);
     }
 
@@ -213,7 +213,7 @@ mod pack_tests {
         let a = Alphabet::new(v.clone());
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
-        let got = Alphabet::unpack(packed).unwrap();
+        let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
         assert_eq!(got.0, v);
     }
     #[test]
@@ -226,7 +226,7 @@ mod pack_tests {
         let a = Alphabet::new(v.clone());
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
-        let got = Alphabet::unpack(packed).unwrap();
+        let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
         assert_eq!(got.0, v);
     }
 
@@ -239,7 +239,7 @@ mod pack_tests {
         let a = Alphabet::new(v.clone());
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
-        let got = Alphabet::unpack(packed).unwrap();
+        let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
         assert_eq!(got.0, v);
     }
 
@@ -259,7 +259,7 @@ mod pack_tests {
         let a = Alphabet::new(v.clone());
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
-        let got = Alphabet::unpack(packed).unwrap();
+        let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
         assert_eq!(got.0, v);
     }
 
@@ -275,7 +275,7 @@ mod pack_tests {
         let a = Alphabet::new(v.clone());
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
-        let got = Alphabet::unpack(packed).unwrap();
+        let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
         assert_eq!(got.0, v);
     }
 
@@ -285,7 +285,7 @@ mod pack_tests {
         let a = Alphabet::new(v.clone());
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
-        let got = Alphabet::unpack(packed).unwrap();
+        let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
         assert_eq!(got.0, v);
     }
 }
