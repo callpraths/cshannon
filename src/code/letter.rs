@@ -70,7 +70,7 @@ impl Letter {
 pub trait Peephole {
     fn data<'a>(&'a self) -> &'a Vec<u8>;
     fn bit_count(&self) -> u64;
-    fn pack(self) -> Vec<u8>;
+    fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()>;
     fn unpack(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<Self, String>
     where
         Self: Sized;
@@ -85,11 +85,10 @@ impl Peephole for Letter {
         self.bit_count
     }
 
-    fn pack(mut self) -> Vec<u8> {
-        let mut p = Vec::new();
-        p.append(&mut pack_u64(self.bit_count));
-        p.append(&mut self.data);
-        p
+    fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()> {
+        w.write_all(&pack_u64(self.bit_count))
+            .map_err(|e| e.to_string())?;
+        w.write_all(&self.data).map_err(|e| e.to_string())
     }
 
     fn unpack(iter: &mut std::vec::IntoIter<u8>) -> core::result::Result<Self, String> {

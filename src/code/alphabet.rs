@@ -42,12 +42,12 @@ impl Alphabet {
     /// Can be deserialized back to an Alphabet with unpack().
     pub fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()> {
         let letter_count = self.0.len();
-        let mut data: Vec<u8> = Vec::new();
-        data.append(&mut pack_u64(letter_count as u64));
+        w.write_all(&pack_u64(letter_count as u64))
+            .map_err(|e| e.to_string())?;
         for l in self.0.into_iter() {
-            data.append(&mut l.pack())
+            l.pack(w)?;
         }
-        w.write_all(&data).map_err(|e| e.to_string())
+        Ok(())
     }
 
     /// Deserialize a vector of bytes generated with pack().
