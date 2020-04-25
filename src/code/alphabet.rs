@@ -37,17 +37,17 @@ impl<'a> std::iter::FromIterator<&'a Letter> for Alphabet {
 }
 
 impl Alphabet {
-    /// Serialize to a vector of bytes.
+    /// Serialize the alphabet to a `Write`er.
     ///
     /// Can be deserialized back to an Alphabet with unpack().
-    pub fn pack(self) -> Vec<u8> {
+    pub fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()> {
         let letter_count = self.0.len();
         let mut data: Vec<u8> = Vec::new();
         data.append(&mut pack_u64(letter_count as u64));
         for l in self.0.into_iter() {
             data.append(&mut l.pack())
         }
-        data
+        w.write_all(&data).map_err(|e| e.to_string())
     }
 
     /// Deserialize a vector of bytes generated with pack().
@@ -191,7 +191,8 @@ mod pack_tests {
     #[test]
     fn roundtrip_trivial() {
         let a = Alphabet::new(vec![]);
-        let packed = a.pack();
+        let mut packed = Vec::<u8>::new();
+        assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(packed).unwrap();
         assert_eq!(got.0.len(), 0);
     }
@@ -200,7 +201,8 @@ mod pack_tests {
     fn roundtrip_single_letter() {
         let v = vec![Letter::from_bytes(&[0b10000001])];
         let a = Alphabet::new(v.clone());
-        let packed = a.pack();
+        let mut packed = Vec::<u8>::new();
+        assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(packed).unwrap();
         assert_eq!(got.0, v);
     }
@@ -209,7 +211,8 @@ mod pack_tests {
     fn roundtrip_single_letter_zeroes() {
         let v = vec![Letter::from_bytes(&[0])];
         let a = Alphabet::new(v.clone());
-        let packed = a.pack();
+        let mut packed = Vec::<u8>::new();
+        assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(packed).unwrap();
         assert_eq!(got.0, v);
     }
@@ -221,7 +224,8 @@ mod pack_tests {
             Letter::from_bytes(&[0b00000111]),
         ];
         let a = Alphabet::new(v.clone());
-        let packed = a.pack();
+        let mut packed = Vec::<u8>::new();
+        assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(packed).unwrap();
         assert_eq!(got.0, v);
     }
@@ -233,7 +237,8 @@ mod pack_tests {
             Letter::from_bytes(&[0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9]),
         ];
         let a = Alphabet::new(v.clone());
-        let packed = a.pack();
+        let mut packed = Vec::<u8>::new();
+        assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(packed).unwrap();
         assert_eq!(got.0, v);
     }
@@ -252,7 +257,8 @@ mod pack_tests {
             Letter::from_bytes(&[0x19]),
         ];
         let a = Alphabet::new(v.clone());
-        let packed = a.pack();
+        let mut packed = Vec::<u8>::new();
+        assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(packed).unwrap();
         assert_eq!(got.0, v);
     }
@@ -267,7 +273,8 @@ mod pack_tests {
             Letter::from_bytes(&[0xd1]),
         ];
         let a = Alphabet::new(v.clone());
-        let packed = a.pack();
+        let mut packed = Vec::<u8>::new();
+        assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(packed).unwrap();
         assert_eq!(got.0, v);
     }
@@ -276,7 +283,8 @@ mod pack_tests {
     fn roundtrip_unaligned_lengths() {
         let v = vec![Letter::new(&[0b111], 3), Letter::new(&[0b100, 0x11], 11)];
         let a = Alphabet::new(v.clone());
-        let packed = a.pack();
+        let mut packed = Vec::<u8>::new();
+        assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(packed).unwrap();
         assert_eq!(got.0, v);
     }
