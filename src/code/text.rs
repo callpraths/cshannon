@@ -9,7 +9,7 @@ use std::u64;
 /// Write a packed stream of letters.
 ///
 /// Returns the number of bytes written.
-pub fn pack<I, W>(letters: I, w: W) -> core::result::Result<usize, String>
+pub fn pack<I, W>(letters: I, w: &mut W) -> core::result::Result<usize, String>
 where
     I: Iterator<Item = Letter>,
     W: std::io::Write,
