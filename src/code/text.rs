@@ -7,9 +7,9 @@ use std::u64;
 /// Write a packed stream of letters.
 ///
 /// Returns the number of bytes written.
-pub fn pack<I, W>(letters: I, w: &mut W) -> core::result::Result<usize, String>
+pub fn pack<'a, I, W>(letters: I, w: &mut W) -> core::result::Result<usize, String>
 where
-    I: Iterator<Item = Letter>,
+    I: Iterator<Item = &'a Letter>,
     W: std::io::Write,
 {
     let mut bytes_written: usize = 0;
@@ -232,7 +232,7 @@ mod pack_tests {
     fn empty() {
         let letters: Vec<Letter> = vec![];
         let mut got = Vec::new();
-        assert_eq!(pack(letters.into_iter(), &mut got), Ok(0));
+        assert_eq!(pack(letters.iter(), &mut got), Ok(0));
         assert_eq!(got, Vec::new());
     }
 
@@ -240,14 +240,14 @@ mod pack_tests {
     fn zero_letter() {
         let letters: Vec<Letter> = vec![Letter::from_bytes(&[])];
         let mut got = Vec::new();
-        assert_eq!(pack(letters.into_iter(), &mut got), Ok(0));
+        assert_eq!(pack(letters.iter(), &mut got), Ok(0));
         assert_eq!(got, Vec::new());
     }
     #[test]
     fn single_byte() {
         let letters = vec![Letter::from_bytes(&[0x11])];
         let mut got = Vec::new();
-        assert_eq!(pack(letters.into_iter(), &mut got), Ok(1));
+        assert_eq!(pack(letters.iter(), &mut got), Ok(1));
         assert_eq!(got, [0x11].to_vec());
     }
 
@@ -258,7 +258,7 @@ mod pack_tests {
         ])];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa];
-        assert_eq!(pack(letters.into_iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
         assert_eq!(got, want);
     }
 
@@ -267,7 +267,7 @@ mod pack_tests {
         let letters = vec![Letter::new(&[0b1101_1000], 5)];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0b1101_1000];
-        assert_eq!(pack(letters.into_iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
         assert_eq!(got, want);
     }
 
@@ -276,7 +276,7 @@ mod pack_tests {
         let letters = vec![Letter::new(&[0b11011000, 0b11100000], 13)];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0b1101_1000, 0b1110_0000];
-        assert_eq!(pack(letters.into_iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
         assert_eq!(got, want);
     }
 
@@ -289,7 +289,7 @@ mod pack_tests {
         ];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x11];
-        assert_eq!(pack(letters.into_iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
         assert_eq!(got, want);
     }
 
@@ -302,7 +302,7 @@ mod pack_tests {
         ];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0b1101_1000, 0b1110_1110, 0b1110_1000];
-        assert_eq!(pack(letters.into_iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
         assert_eq!(got, want);
     }
 
@@ -315,7 +315,7 @@ mod pack_tests {
         ];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0b110__1101_0, 0b0__110__0000];
-        assert_eq!(pack(letters.into_iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
         assert_eq!(got, want);
     }
 }

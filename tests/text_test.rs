@@ -19,7 +19,7 @@ fn roundtrip() {
     ];
 
     let mut packed = Vec::new();
-    assert!(code::pack(text.into_iter(), &mut packed).is_ok());
+    assert!(code::pack(text.iter(), &mut packed).is_ok());
     let want_packed: Vec<u8> = vec![
         // l1__l2
         0b1100__0101,
