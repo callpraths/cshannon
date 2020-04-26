@@ -16,6 +16,11 @@ pub struct ByteIter<R: std::io::Read>(R);
 /// A `TokenPacker` for packing `Byte`s.
 pub struct BytePacker();
 
+/// Used for tests in tokens module, not re-exported.
+pub fn new(v: u8) -> Byte {
+    Byte(v)
+}
+
 impl std::fmt::Display for Byte {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
