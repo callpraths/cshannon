@@ -21,20 +21,21 @@ reasonable, and readability is prioritized over efficiency.
 * ~Split code package into sub-packages, control visibility properly.~
 * Fix error handling before it's too late.
   * [failure?](https://github.com/rust-lang-nursery/failure)
-* Coder:
-  * Create from model (start with trivial code)
-  * Serialize to vec<u8>x
-  * Create from vec<u8>
-  * coder[token.Token] -> code.Letter
-  * coder[code.Letter] -> token.Token
+* ~Coder:~
+  * ~Create from model (start with trivial code)~
+  * ~Serialize to vec<u8>~
+  * ~Create from vec<u8>~
+  * ~coder[token.Token] -> code.Letter~
+  * ~coder[code.Letter] -> token.Token~
 * Shanon coder:
   * Shannon coding scheme is computed.
 * end-to-end encode:
-    * A second pass on the input is used to code the input.
-      * Coding scheme is included _at the beginning of output_.
-* end-to-end decode:
-  * Using the coding scheme included in the input, complressed stream is decoded
-    back to source token stream, and then to source text via Tokenizerrr.
+    * Get end-to-end tests to pass.
+    * ~A second pass on the input is used to code the input.~
+      * ~coding scheme is included _at the beginning of output_.~
+* ~end-to-end decode:~
+  * ~Using the coding scheme included in the input, complressed stream is decoded~
+    ~back to source token stream, and then to source text via Tokenizerrr.~
 
 ## Extra credit
 
