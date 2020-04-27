@@ -69,7 +69,7 @@ where
     let size = unpack_u64(&mut r)?;
     let safe_size = usize::try_from(size).map_err(|e| e.to_string())?;
     let mut buf = vec![0u8; safe_size];
-    r.read_exact(&mut buf).map_err(|e| e.to_string())?;
+    r.read_exact(&mut buf).map_err(|e| e.to_string()).unwrap();
     TI::unpack(Cursor::new(buf)).collect()
 }
 
@@ -81,7 +81,7 @@ fn pack_u64(s: u64) -> Vec<u8> {
 // TODO:: dedup with code::common::unpack_u64()
 pub fn unpack_u64<R: std::io::Read>(mut r: R) -> Result<u64> {
     let mut buf: [u8; 8] = [0; 8];
-    r.read_exact(&mut buf).map_err(|e| e.to_string())?;
+    r.read_exact(&mut buf).map_err(|e| e.to_string()).unwrap();
     Ok(u64::from_be_bytes(buf))
 }
 

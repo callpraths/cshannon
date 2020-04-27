@@ -95,7 +95,7 @@ impl Peephole for Letter {
         let bit_count = unpack_u64(&mut r)?;
         let byte_count = (bit_count + 7) / 8;
         let mut data = vec![0u8; byte_count.try_into().unwrap()];
-        r.read_exact(&mut data).map_err(|e| e.to_string())?;
+        r.read_exact(&mut data).map_err(|e| e.to_string()).unwrap();
         Ok(Self { bit_count, data })
     }
 }

@@ -14,12 +14,19 @@ impl Alphabet {
         Alphabet(letters)
     }
 
+    /// Number of letters in the `Alphabet`.
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    /// Check whether this `Alphabet` is empty.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    /// Return a reference to the ordered `Letter`s in this `Alphabet`.
+    pub fn letters(&self) -> &Vec<Letter> {
+        &self.0
     }
 }
 

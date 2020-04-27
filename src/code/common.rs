@@ -17,6 +17,6 @@ pub fn pack_u64(s: u64) -> Vec<u8> {
 
 pub fn unpack_u64<R: std::io::Read>(mut r: R) -> Result<u64> {
     let mut buf: [u8; 8] = [0; 8];
-    r.read_exact(&mut buf).map_err(|e| e.to_string())?;
+    r.read_exact(&mut buf).map_err(|e| e.to_string()).unwrap();
     Ok(u64::from_be_bytes(buf))
 }

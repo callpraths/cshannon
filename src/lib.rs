@@ -6,12 +6,15 @@ pub mod encoding;
 pub mod model;
 pub mod tokens;
 
+use code::Letter;
 use tokens::bytes::{Byte, ByteIter, BytePacker};
 use tokens::graphemes::{Grapheme, GraphemeIter, GraphemePacker};
 use tokens::words::{Word, WordIter, WordPacker};
 use tokens::{Token, TokenIter, TokenPacker};
 
-use std::fs::{self, File};
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::{BufReader, BufWriter, Cursor};
 
 pub fn run(args: clap::ArgMatches) -> Result<(), String> {
     // Safe to use unwrap() because these args are `required`.
@@ -21,52 +24,90 @@ pub fn run(args: clap::ArgMatches) -> Result<(), String> {
 
     match args.subcommand_name() {
         Some("compress") => match tokenizer_choice {
-            "byte" => compress::<Byte, ByteIter<File>, BytePacker>(&input_file, &output_file),
+            "byte" => {
+                compress::<Byte, ByteIter<BufReader<File>>, BytePacker>(&input_file, &output_file)
+            }
             "grapheme" => {
                 compress::<Grapheme, GraphemeIter, GraphemePacker>(&input_file, &output_file)
             }
             "word" => compress::<Word, WordIter, WordPacker>(&input_file, &output_file),
             _ => Err(format!("invalid tokenizer {}", tokenizer_choice)),
         },
-        Some("decompress") => decompress(&input_file, &output_file),
+        Some("decompress") => match tokenizer_choice {
+            "byte" => {
+                decompress::<Byte, ByteIter<BufReader<File>>, ByteIter<Cursor<Vec<u8>>>, BytePacker>(
+                    &input_file,
+                    &output_file,
+                )
+            }
+            "grapheme" => decompress::<Grapheme, GraphemeIter, GraphemeIter, GraphemePacker>(
+                &input_file,
+                &output_file,
+            ),
+            "word" => decompress::<Word, WordIter, WordIter, WordPacker>(&input_file, &output_file),
+            _ => Err(format!("invalid tokenizer {}", tokenizer_choice)),
+        },
         _ => Err("no sub-command selected".to_string()),
     }
 }
 
-fn compress<T, TIter, TPacker>(input_file: &str, output_file: &str) -> Result<(), String>
+/// Document me.
+/// TODO: Convert to use AsRef<Path>
+pub fn compress<T, TIter, TPacker>(input_file: &str, output_file: &str) -> Result<(), String>
 where
     T: Token,
-    TIter: TokenIter<File, T = T>,
-    TPacker: TokenPacker<File, T = T>,
+    TIter: TokenIter<BufReader<File>, T = T>,
+    TPacker: TokenPacker<BufWriter<File>, T = T>,
 {
     println!("Compressing...");
-    let r = File::open(input_file).map_err(|e| e.to_string())?;
-    let mut w = File::create(output_file).map_err(|e| e.to_string())?;
-    pack::<_, _, TPacker>(unpack::<T, TIter>(r).map(|r| r.unwrap()), &mut w)
+    let r = BufReader::new(File::open(input_file).map_err(|e| e.to_string())?);
+    let tokens = TIter::unpack(r).map(|r| r.unwrap());
+    let encoding = crate::encoding::balanced_tree::new(model::from(tokens))?;
+
+    let r = BufReader::new(File::open(input_file).map_err(|e| e.to_string())?);
+    let tokens = TIter::unpack(r).map(|r| r.unwrap());
+    let code_text = coder::encode(encoding.map(), tokens).map(|r| r.unwrap());
+
+    let mut w = BufWriter::new(File::create(output_file).map_err(|e| e.to_string())?);
+    crate::tokens::pack_all::<_, _, TPacker>(encoding.tokens(), &mut w)?;
+    encoding.alphabet().pack(&mut w)?;
+    crate::code::pack(code_text, &mut w)?;
+    Ok(())
 }
 
-fn decompress(input_file: &str, output_file: &str) -> Result<(), String> {
+/// Document me.
+/// TODO: Convert to use AsRef<Path>
+pub fn decompress<T, TIter, TAllIter, TPacker>(
+    input_file: &str,
+    output_file: &str,
+) -> Result<(), String>
+where
+    T: Token,
+    TIter: TokenIter<BufReader<File>, T = T>,
+    TAllIter: TokenIter<Cursor<Vec<u8>>, T = T>,
+    TPacker: TokenPacker<BufWriter<File>, T = T>,
+{
     println!("Decompressing...");
-    fs::write(
-        output_file,
-        fs::read_to_string(input_file).map_err(|e| e.to_string())?,
-    )
-    .map_err(|e| e.to_string())
-}
+    let r = File::open(input_file).map_err(|e| e.to_string())?;
+    // Must use a cloned File because unpack_with_len() expects to take
+    // ownership of the supplied `Read`er.
+    let tokens = crate::tokens::unpack_all::<_, _, TAllIter>(BufReader::new(
+        r.try_clone().map_err(|e| e.to_string())?,
+    ))?;
 
-fn unpack<T, TIter>(r: File) -> impl TokenIter<File, T = T>
-where
-    T: Token,
-    TIter: TokenIter<File, T = T>,
-{
-    TIter::unpack(r)
-}
+    let mut br = BufReader::new(r);
+    let alphabet = crate::code::Alphabet::unpack(&mut br)?;
+    let map = alphabet
+        .letters()
+        .iter()
+        .cloned()
+        .zip(tokens.into_iter())
+        .collect::<HashMap<Letter, T>>();
 
-fn pack<T, I, TPacker>(i: I, w: &mut File) -> Result<(), String>
-where
-    T: Token,
-    I: std::iter::Iterator<Item = T>,
-    TPacker: TokenPacker<File, T = T>,
-{
-    TPacker::pack(i, w)
+    let coded_text = crate::code::parse(&alphabet, &mut br)?.map(|r| r.unwrap());
+    let tokens = crate::coder::decode(&map, coded_text).map(|r| r.unwrap());
+
+    let mut w = BufWriter::new(File::create(output_file).map_err(|e| e.to_string())?);
+    TPacker::pack(tokens, &mut w)?;
+    Ok(())
 }
