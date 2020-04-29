@@ -57,22 +57,18 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let mut store = None;
         std::mem::swap(&mut self.0, &mut store);
-        let result = match &mut store {
+        let mut i = match store {
             None => {
                 return None;
             }
             Some(n) => match n {
-                // TODO this breaks error chain.
-                // Instead, rework this function to move error.
-                Err(e) => return Some(Err(Error::msg(e.to_string()))),
-                Ok(i) => match i.next() {
-                    None => None,
-                    Some(p) => Some(Ok(p)),
-                },
+                Err(e) => return Some(Err(e)),
+                Ok(i) => i,
             },
         };
-        std::mem::swap(&mut store, &mut self.0);
-        result
+        let result = i.next();
+        std::mem::swap(&mut Some(Ok(i)), &mut self.0);
+        result.map(Ok)
     }
 }
 
