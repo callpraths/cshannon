@@ -4,9 +4,6 @@ use std::collections::HashMap;
 
 pub mod balanced_tree;
 
-/// Alias for results returned from encodings.
-pub type Result<T> = std::result::Result<T, String>;
-
 /// An `Encoding` maps `Token`s to `Letter`s.
 ///
 /// `Encoding`s are usually created by processing a `Model`.

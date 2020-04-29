@@ -1,7 +1,8 @@
-use super::{Encoding, Result};
+use super::Encoding;
 use crate::code::Letter;
 use crate::model::Model;
 use crate::tokens::Token;
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
 /// Create a new balanced tree `Encoding`.
@@ -39,7 +40,7 @@ struct LetterGenerator {
 impl LetterGenerator {
     pub fn new(bit_count: u64) -> Result<Self> {
         if bit_count > 64 {
-            return Err("model has too many keys".to_owned());
+            return Err(anyhow!("model has too many keys"));
         }
         Ok(Self {
             bit_count,

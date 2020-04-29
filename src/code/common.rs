@@ -1,4 +1,4 @@
-use super::types::Result;
+use anyhow::Result;
 
 pub static BIT_HOLE_MASKS: [u8; 8] = [
     0b1000_0000,
@@ -17,6 +17,6 @@ pub fn pack_u64(s: u64) -> Vec<u8> {
 
 pub fn unpack_u64<R: std::io::Read>(mut r: R) -> Result<u64> {
     let mut buf: [u8; 8] = [0; 8];
-    r.read_exact(&mut buf).map_err(|e| e.to_string()).unwrap();
+    r.read_exact(&mut buf)?;
     Ok(u64::from_be_bytes(buf))
 }

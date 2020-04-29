@@ -1,5 +1,5 @@
 use super::common::{pack_u64, unpack_u64, BIT_HOLE_MASKS};
-use super::types::Result;
+use anyhow::{anyhow, Result};
 use std::convert::TryInto;
 use std::fmt;
 
@@ -55,9 +55,10 @@ impl Letter {
     /// Returns an error if the index is out of bounds.
     pub fn at(&self, i: usize) -> Result<bool> {
         if i as u64 >= self.bit_count {
-            return Err(format!(
+            return Err(anyhow!(
                 "index {} out of bounds of letter sized {}",
-                i, self.bit_count,
+                i,
+                self.bit_count,
             ));
         }
         let b = i / 8;
@@ -71,7 +72,7 @@ pub trait Peephole {
     fn data<'a>(&'a self) -> &'a Vec<u8>;
     fn bit_count(&self) -> u64;
     fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()>;
-    fn unpack<R: std::io::Read>(r: R) -> core::result::Result<Self, String>
+    fn unpack<R: std::io::Read>(r: R) -> Result<Self>
     where
         Self: Sized;
 }
@@ -86,16 +87,16 @@ impl Peephole for Letter {
     }
 
     fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()> {
-        w.write_all(&pack_u64(self.bit_count))
-            .map_err(|e| e.to_string())?;
-        w.write_all(&self.data).map_err(|e| e.to_string())
+        w.write_all(&pack_u64(self.bit_count))?;
+        w.write_all(&self.data)?;
+        Ok(())
     }
 
-    fn unpack<R: std::io::Read>(mut r: R) -> core::result::Result<Self, String> {
+    fn unpack<R: std::io::Read>(mut r: R) -> Result<Self> {
         let bit_count = unpack_u64(&mut r)?;
         let byte_count = (bit_count + 7) / 8;
         let mut data = vec![0u8; byte_count.try_into().unwrap()];
-        r.read_exact(&mut data).map_err(|e| e.to_string()).unwrap();
+        r.read_exact(&mut data)?;
         Ok(Self { bit_count, data })
     }
 }

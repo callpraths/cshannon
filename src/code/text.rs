@@ -1,13 +1,13 @@
 use super::alphabet::{Alphabet, Node, Peephole as aPeephole};
 use super::common::BIT_HOLE_MASKS;
 use super::letter::{Letter, Peephole as lPeephole};
-use super::types::Result;
+use anyhow::{anyhow, Error, Result};
 use std::u64;
 
 /// Write a packed stream of letters.
 ///
 /// Returns the number of bytes written.
-pub fn pack<'a, I, W>(letters: I, w: &mut W) -> core::result::Result<usize, String>
+pub fn pack<'a, I, W>(letters: I, w: &mut W) -> Result<usize>
 where
     I: Iterator<Item = &'a Letter>,
     W: std::io::Write,
@@ -22,7 +22,7 @@ where
             assert!(has_more_bytes);
             byte_buffer |= b >> byte_buffer_len;
             if byte_buffer_len + remaining_bit_count >= 8 {
-                bytes_written += w.write(&[byte_buffer]).map_err(|e| e.to_string())?;
+                bytes_written += w.write(&[byte_buffer])?;
 
                 byte_buffer = safe_overflow_leftshift(*b, 8 - byte_buffer_len);
                 if remaining_bit_count > 8 {
@@ -38,9 +38,9 @@ where
         }
     }
     if byte_buffer_len > 0 {
-        bytes_written += w.write(&[byte_buffer]).map_err(|e| e.to_string())?;
+        bytes_written += w.write(&[byte_buffer])?;
     }
-    w.flush().map_err(|e| e.to_string())?;
+    w.flush()?;
     Ok(bytes_written)
 }
 
@@ -123,7 +123,7 @@ where
                 if trivial_tail {
                     return None;
                 } else {
-                    return Some(Err("trailing data".to_owned()));
+                    return Some(Err(anyhow!("trailing data")));
                 }
             }
             Some(Err(e)) => {
@@ -164,7 +164,7 @@ where
                         }
                     }
                 }
-                return Some(Err("trailing data".to_owned()));
+                return Some(Err(anyhow!("trailing data")));
             }
             Some(next) => {
                 return Self::parse_one(state, &*next, trivial_tail & !b);
@@ -181,7 +181,7 @@ where
         if self.current_bit_offset == 8 {
             match self.r.next() {
                 None => return None,
-                Some(Err(e)) => return Some(Err(e.to_string())),
+                Some(Err(e)) => return Some(Err(Error::new(e))),
                 Some(Ok(b)) => {
                     self.current_byte = b;
                 }
@@ -232,7 +232,7 @@ mod pack_tests {
     fn empty() {
         let letters: Vec<Letter> = vec![];
         let mut got = Vec::new();
-        assert_eq!(pack(letters.iter(), &mut got), Ok(0));
+        assert_eq!(pack(letters.iter(), &mut got).unwrap(), 0);
         assert_eq!(got, Vec::new());
     }
 
@@ -240,14 +240,14 @@ mod pack_tests {
     fn zero_letter() {
         let letters: Vec<Letter> = vec![Letter::from_bytes(&[])];
         let mut got = Vec::new();
-        assert_eq!(pack(letters.iter(), &mut got), Ok(0));
+        assert_eq!(pack(letters.iter(), &mut got).unwrap(), 0);
         assert_eq!(got, Vec::new());
     }
     #[test]
     fn single_byte() {
         let letters = vec![Letter::from_bytes(&[0x11])];
         let mut got = Vec::new();
-        assert_eq!(pack(letters.iter(), &mut got), Ok(1));
+        assert_eq!(pack(letters.iter(), &mut got).unwrap(), 1);
         assert_eq!(got, [0x11].to_vec());
     }
 
@@ -258,7 +258,7 @@ mod pack_tests {
         ])];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa];
-        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got).unwrap(), want.len());
         assert_eq!(got, want);
     }
 
@@ -267,7 +267,7 @@ mod pack_tests {
         let letters = vec![Letter::new(&[0b1101_1000], 5)];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0b1101_1000];
-        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got).unwrap(), want.len());
         assert_eq!(got, want);
     }
 
@@ -276,7 +276,7 @@ mod pack_tests {
         let letters = vec![Letter::new(&[0b11011000, 0b11100000], 13)];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0b1101_1000, 0b1110_0000];
-        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got).unwrap(), want.len());
         assert_eq!(got, want);
     }
 
@@ -289,7 +289,7 @@ mod pack_tests {
         ];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x11];
-        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got).unwrap(), want.len());
         assert_eq!(got, want);
     }
 
@@ -302,7 +302,7 @@ mod pack_tests {
         ];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0b1101_1000, 0b1110_1110, 0b1110_1000];
-        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got).unwrap(), want.len());
         assert_eq!(got, want);
     }
 
@@ -315,7 +315,7 @@ mod pack_tests {
         ];
         let mut got = Vec::new();
         let want: Vec<u8> = vec![0b110__1101_0, 0b0__110__0000];
-        assert_eq!(pack(letters.iter(), &mut got), Ok(want.len()));
+        assert_eq!(pack(letters.iter(), &mut got).unwrap(), want.len());
         assert_eq!(got, want);
     }
 }

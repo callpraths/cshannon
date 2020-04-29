@@ -1,3 +1,4 @@
+use anyhow::Result;
 use cshannon::*;
 use std::io::Cursor;
 
@@ -35,7 +36,7 @@ fn roundtrip() {
         0b0_1__1100_00,
     ];
     assert_eq!(packed, want_packed);
-    let r: code::Result<Vec<&code::Letter>> = code::parse(&alphabet, Cursor::new(packed))
+    let r: Result<Vec<&code::Letter>> = code::parse(&alphabet, Cursor::new(packed))
         .unwrap()
         .collect();
     let c = r.unwrap();

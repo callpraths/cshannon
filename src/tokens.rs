@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::io::Cursor;
@@ -7,8 +8,6 @@ pub mod graphemes;
 mod string_parts;
 pub mod test_utils;
 pub mod words;
-
-pub type Result<T> = std::result::Result<T, String>;
 
 /// A single item in the tokenized stream from a string input.
 ///
@@ -53,8 +52,7 @@ where
     TP: TokenPacker<W, T = T>,
 {
     let size = tokens.iter().fold(0, |sum, t| sum + t.bit_count()) / 8;
-    w.write_all(&pack_u64(size as u64))
-        .map_err(|e| e.to_string())?;
+    w.write_all(&pack_u64(size as u64))?;
     TP::pack(tokens.into_iter(), w)?;
     Ok(())
 }
@@ -67,9 +65,9 @@ where
     TI: TokenIter<Cursor<Vec<u8>>, T = T>,
 {
     let size = unpack_u64(&mut r)?;
-    let safe_size = usize::try_from(size).map_err(|e| e.to_string())?;
+    let safe_size = usize::try_from(size)?;
     let mut buf = vec![0u8; safe_size];
-    r.read_exact(&mut buf).map_err(|e| e.to_string()).unwrap();
+    r.read_exact(&mut buf)?;
     TI::unpack(Cursor::new(buf)).collect()
 }
 
@@ -81,7 +79,7 @@ fn pack_u64(s: u64) -> Vec<u8> {
 // TODO:: dedup with code::common::unpack_u64()
 pub fn unpack_u64<R: std::io::Read>(mut r: R) -> Result<u64> {
     let mut buf: [u8; 8] = [0; 8];
-    r.read_exact(&mut buf).map_err(|e| e.to_string()).unwrap();
+    r.read_exact(&mut buf)?;
     Ok(u64::from_be_bytes(buf))
 }
 

@@ -2,7 +2,8 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Result, Token, TokenIter, TokenPacker};
+use crate::tokens::{Token, TokenIter, TokenPacker};
+use anyhow::{Error, Result};
 use std::fmt;
 use std::hash::Hash;
 
@@ -46,7 +47,7 @@ impl<R: std::io::Read> std::iter::Iterator for ByteIter<R> {
     fn next(&mut self) -> Option<Self::Item> {
         let mut buf: [u8; 1] = [0; 1];
         match self.0.read(&mut buf[..]) {
-            Err(e) => Some(Err(e.to_string())),
+            Err(e) => Some(Err(Error::new(e))),
             Ok(0) => None,
             Ok(1) => Some(Ok(Byte(buf[0]))),
             Ok(l) => panic!("read {} bytes in 1 byte buffer", l),
@@ -68,10 +69,10 @@ where
         for b in i {
             buf[0] = b.0;
             if let Err(e) = w.write_all(&buf[..]) {
-                return Err(e.to_string());
+                return Err(Error::new(e));
             }
         }
-        w.flush().map_err(|e| e.to_string())?;
+        w.flush()?;
         Ok(())
     }
 }

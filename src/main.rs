@@ -2,9 +2,10 @@
 
 extern crate cshannon;
 
+use anyhow::Result;
 use clap::{App, Arg, SubCommand};
 
-fn main() {
+fn main() -> Result<()> {
     let args = App::new("Shannon Coder-Decoder")
         .version("0.1.0")
         .author("Prathmesh Prabhu (callpraths@gmail.com")
@@ -48,8 +49,7 @@ Must be different from input file.",
         .subcommand(SubCommand::with_name("decompress").about("Decompress a file"))
         .get_matches();
 
-    match cshannon::run(args) {
-        Ok(()) => println!("Success"),
-        Err(err) => panic!("Error: {}", err),
-    }
+    cshannon::run(args)?;
+    println!("Success");
+    Ok(())
 }

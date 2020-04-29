@@ -1,8 +1,9 @@
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Result, Token, TokenIter, TokenPacker};
+use crate::tokens::{Token, TokenIter, TokenPacker};
 use unicode_segmentation::{self, UnicodeSegmentation};
 
+use anyhow::{Error, Result};
 use std::convert::{From, Into};
 use std::marker::PhantomData;
 
@@ -20,10 +21,10 @@ where
     {
         let mut data = Vec::<u8>::new();
         if let Err(e) = r.read_to_end(&mut data) {
-            return Self(Some(Err(e.to_string())));
+            return Self(Some(Err(Error::new(e))));
         }
         match std::str::from_utf8(&data) {
-            Err(e) => Self(Some(Err(e.to_string()))),
+            Err(e) => Self(Some(Err(Error::new(e)))),
             Ok(s) => {
                 let mut parts = Vec::<S>::new();
                 for g in s.graphemes(true) {
@@ -61,7 +62,9 @@ where
                 return None;
             }
             Some(n) => match n {
-                Err(e) => return Some(Err((*e).to_string())),
+                // TODO this breaks error chain.
+                // Instead, rework this function to move error.
+                Err(e) => return Some(Err(Error::msg(e.to_string()))),
                 Ok(i) => match i.next() {
                     None => None,
                     Some(p) => Some(Ok(p)),
@@ -91,10 +94,10 @@ where
         for s in i {
             let buf: String = s.into();
             if let Err(e) = w.write_all(buf.as_bytes()) {
-                return Err(e.to_string());
+                return Err(Error::new(e));
             }
         }
-        w.flush().map_err(|e| e.to_string())?;
+        w.flush()?;
         Ok(())
     }
 }

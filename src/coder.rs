@@ -1,8 +1,7 @@
 use crate::code::Letter;
 use crate::tokens::Token;
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
-
-pub type Result<T> = std::result::Result<T, String>;
 
 pub fn encode<'a, T, TS>(
     encoding: &'a HashMap<T, Letter>,
@@ -14,7 +13,7 @@ where
 {
     input.map(move |t| match encoding.get(&t) {
         Some(l) => Ok(l),
-        None => Err(format!("Unknown token {}", t.to_string())),
+        None => Err(anyhow!("Unknown token {}", t.to_string())),
     })
 }
 
@@ -28,6 +27,6 @@ where
 {
     input.map(move |l| match encoding.get(l) {
         Some(t) => Ok((*t).clone()),
-        None => Err(format!("no encoding for letter {}", l)),
+        None => Err(anyhow!("no encoding for letter {}", l)),
     })
 }

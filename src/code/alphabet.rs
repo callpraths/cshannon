@@ -1,6 +1,6 @@
 use super::common::{pack_u64, unpack_u64};
 use super::letter::{Letter, Peephole as lPeephole};
-use super::types::Result;
+use anyhow::{anyhow, Result};
 
 /// Alphabet is an ordered list of unique Letters.
 #[derive(Clone, Debug)]
@@ -49,8 +49,7 @@ impl Alphabet {
     /// Can be deserialized back to an Alphabet with unpack().
     pub fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()> {
         let letter_count = self.0.len();
-        w.write_all(&pack_u64(letter_count as u64))
-            .map_err(|e| e.to_string())?;
+        w.write_all(&pack_u64(letter_count as u64))?;
         for l in self.0.into_iter() {
             l.pack(w)?;
         }
@@ -77,7 +76,7 @@ pub trait Peephole {
 impl Peephole for Alphabet {
     fn tree<'a>(&'a self) -> Result<Node<'a>> {
         if self.0.is_empty() {
-            return Err("no letters".to_owned());
+            return Err(anyhow!("no letters"));
         }
         let mut root = Node::Internal {
             zero: None,
@@ -116,7 +115,7 @@ impl Alphabet {
                         return Alphabet::follow_branch(zero, l, offset + 1);
                     }
                     // This error message actually needs a slice l[0:offset]
-                    Node::Leaf { .. } => return Err(format!("Duplicate prefix {}", l)),
+                    Node::Leaf { .. } => return Err(anyhow!("Duplicate prefix {}", l)),
                     _ => return Ok((tree, offset)),
                 }
             }
@@ -126,11 +125,11 @@ impl Alphabet {
                         return Alphabet::follow_branch(one, l, offset + 1);
                     }
                     // This error message actually needs a slice l[0:offset]
-                    Node::Leaf { .. } => return Err(format!("Duplicate prefix {}", l)),
+                    Node::Leaf { .. } => return Err(anyhow!("Duplicate prefix {}", l)),
                     _ => return Ok((tree, offset)),
                 }
             }
-            Err(_) => Err(format!("Duplicate prefix {}", l)),
+            Err(_) => Err(anyhow!("Duplicate prefix {}", l)),
         }
     }
 
