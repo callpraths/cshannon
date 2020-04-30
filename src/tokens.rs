@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::trace;
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::io::Cursor;
@@ -51,8 +52,10 @@ where
     T: Token,
     TP: TokenPacker<W, T = T>,
 {
+    // FIXME: This assumes that tokens are at least a byte wide.
     let size = tokens.iter().fold(0, |sum, t| sum + t.bit_count()) / 8;
     w.write_all(&pack_u64(size as u64))?;
+    trace!("wrote size {} as {:?}", size, pack_u64(size as u64));
     TP::pack(tokens.into_iter(), w)?;
     Ok(())
 }
@@ -65,9 +68,11 @@ where
     TI: TokenIter<Cursor<Vec<u8>>, T = T>,
 {
     let size = unpack_u64(&mut r)?;
+    trace!("unpacked size {}", size);
     let safe_size = usize::try_from(size)?;
     let mut buf = vec![0u8; safe_size];
     r.read_exact(&mut buf)?;
+    trace!("read {} bytes to unpack into tokens", buf.len());
     TI::unpack(Cursor::new(buf)).collect()
 }
 

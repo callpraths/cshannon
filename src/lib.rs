@@ -1,4 +1,5 @@
 #![feature(associated_type_bounds)]
+#![feature(seek_convenience)]
 
 pub mod code;
 pub mod coder;
@@ -8,21 +9,25 @@ pub mod tokens;
 
 use anyhow::{anyhow, Result};
 use code::Letter;
+use log::{info, trace};
+use std::io::Seek;
 use tokens::bytes::{Byte, ByteIter, BytePacker};
 use tokens::graphemes::{Grapheme, GraphemeIter, GraphemePacker};
 use tokens::words::{Word, WordIter, WordPacker};
 use tokens::{Token, TokenIter, TokenPacker};
 
+use env_logger::Env;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Cursor};
 
 pub fn run(args: clap::ArgMatches) -> Result<()> {
+    env_logger::from_env(Env::default().default_filter_or("warn")).init();
+
     // Safe to use unwrap() because these args are `required`.
     let input_file = args.value_of("input_file").unwrap();
     let output_file = args.value_of("output_file").unwrap();
     let tokenizer_choice = args.value_of("tokenizer").unwrap();
-
     match args.subcommand_name() {
         Some("compress") => match tokenizer_choice {
             "byte" => {
@@ -60,7 +65,7 @@ where
     TIter: TokenIter<BufReader<File>, T = T>,
     TPacker: TokenPacker<BufWriter<File>, T = T>,
 {
-    println!("Compressing...");
+    info!("Compressing...");
     let r = BufReader::new(File::open(input_file)?);
     let tokens = TIter::unpack(r).map(|r| r.unwrap());
     let encoding = crate::encoding::balanced_tree::new(model::from(tokens))?;
@@ -85,14 +90,22 @@ where
     TAllIter: TokenIter<Cursor<Vec<u8>>, T = T>,
     TPacker: TokenPacker<BufWriter<File>, T = T>,
 {
-    println!("Decompressing...");
-    let r = File::open(input_file)?;
+    info!("Decompressing...");
+    let mut r = File::open(input_file)?;
+    trace!("File position at the start: {:?}", r.stream_position());
     // Must use a cloned File because unpack_with_len() expects to take
     // ownership of the supplied `Read`er.
     let tokens = crate::tokens::unpack_all::<_, _, TAllIter>(BufReader::new(r.try_clone()?))?;
-
+    trace!(
+        "File position after unpacking token set: {:?}",
+        r.stream_position()
+    );
     let mut br = BufReader::new(r);
     let alphabet = crate::code::Alphabet::unpack(&mut br)?;
+    trace!(
+        "File position after unpacking alphabet set: {:?}",
+        br.stream_position()
+    );
     let map = alphabet
         .letters()
         .iter()

@@ -1,4 +1,5 @@
 #![feature(associated_type_bounds)]
+#![feature(seek_convenience)]
 
 extern crate cshannon;
 
