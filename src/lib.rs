@@ -93,14 +93,13 @@ where
     info!("Decompressing...");
     let mut r = File::open(input_file)?;
     trace!("File position at the start: {:?}", r.stream_position());
-    // Must use a cloned File because unpack_with_len() expects to take
-    // ownership of the supplied `Read`er.
-    let tokens = crate::tokens::unpack_all::<_, _, TAllIter>(BufReader::new(r.try_clone()?))?;
+    let mut br = BufReader::new(r);
+    let tokens = crate::tokens::unpack_all::<_, _, TAllIter>(&mut br)?;
     trace!(
         "File position after unpacking token set: {:?}",
-        r.stream_position()
+        br.stream_position()
     );
-    let mut br = BufReader::new(r);
+
     let alphabet = crate::code::Alphabet::unpack(&mut br)?;
     trace!(
         "File position after unpacking alphabet set: {:?}",
@@ -113,7 +112,7 @@ where
         .zip(tokens.into_iter())
         .collect::<HashMap<Letter, T>>();
 
-    let coded_text = crate::code::parse(&alphabet, &mut br)?.map(|r| r.unwrap());
+    let coded_text = crate::code::parse(&alphabet, br)?.map(|r| r.unwrap());
     let tokens = crate::coder::decode(&map, coded_text).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);

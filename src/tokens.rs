@@ -61,7 +61,7 @@ where
 }
 
 /// Unpacks a vector of tokens previously packed with pack_with_len().
-pub fn unpack_all<R, T, TI>(mut r: R) -> Result<Vec<T>>
+pub fn unpack_all<R, T, TI>(mut r: &mut R) -> Result<Vec<T>>
 where
     R: std::io::Read,
     T: Token,
@@ -99,7 +99,7 @@ mod roundtrip_with_len_tests {
         let tokens = Vec::<Byte>::new();
         let mut buf = Vec::<u8>::new();
         assert!(pack_all::<_, _, BytePacker>(tokens.clone(), &mut buf).is_ok());
-        let got = unpack_all::<_, _, ByteIter<_>>(Cursor::new(&mut buf)).unwrap();
+        let got = unpack_all::<_, _, ByteIter<_>>(&mut Cursor::new(&mut buf)).unwrap();
         assert_eq!(got, tokens);
     }
 
@@ -119,7 +119,7 @@ mod roundtrip_with_len_tests {
         ];
         let mut buf = Vec::<u8>::new();
         assert!(pack_all::<_, _, BytePacker>(tokens.clone(), &mut buf).is_ok());
-        let got = unpack_all::<_, _, ByteIter<_>>(Cursor::new(&mut buf)).unwrap();
+        let got = unpack_all::<_, _, ByteIter<_>>(&mut Cursor::new(&mut buf)).unwrap();
         assert_eq!(got, tokens);
     }
 
