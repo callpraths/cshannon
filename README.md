@@ -5,39 +5,30 @@ Compression and Decompression a la Shannon's algorithm.
 This is a pet project. All plans are funny money, code quality is (hopefully)
 reasonable, and readability is prioritized over efficiency.
 
-## Sprints
+## TODO
 
-* ~~Encode and decode sub-commands added. Encoding, decoding is trivial (input is
-  mirrored as output).~~
-  * ~~Integration test added to ensure round-trip results in no-diff.~~
-* ~~Tokenizer:~~
-  * ~~Input is tokenized into a stream of source language tokens.~~
-    * ~~tokens == {english word, byte, unicode ... (to support hindi)}~~
-  * ~~Token stream is transformed back to text.~~
-* ~Model builder: Relative frequencies are computed for the input.~
-* ~Code:~
-  * ~pack(iter over Letters) -> vec<u8>~
-  * ~unpack(Alphabet, vec<u8>) -> iterable over Letters~
-* ~Split code package into sub-packages, control visibility properly.~
-* Fix error handling before it's too late.
-  * [failure?](https://github.com/rust-lang-nursery/failure)
-* ~Coder:~
-  * ~Create from model (start with trivial code)~
-  * ~Serialize to vec<u8>~
-  * ~Create from vec<u8>~
-  * ~coder[token.Token] -> code.Letter~
-  * ~coder[code.Letter] -> token.Token~
-* Shanon coder:
-  * Shannon coding scheme is computed.
-* end-to-end encode:
-    * Get end-to-end tests to pass.
-    * ~A second pass on the input is used to code the input.~
-      * ~coding scheme is included _at the beginning of output_.~
-* ~end-to-end decode:~
-  * ~Using the coding scheme included in the input, complressed stream is decoded~
-    ~back to source token stream, and then to source text via Tokenizerrr.~
+### Implemenation
 
-## Extra credit
+* Implement Shannon encoding scheme
+* Implement Fano encoding scheme
+* Implement Huffman encoding scheme
 
-* Learn about micro-benchmarks. Write some, make it faster!
-* Leran about fuzz testing. Write some, find bugs!
+### Hygiene
+
+* Github CI setup
+* Github badge setup
+* Create crate and releases.
+
+### Learn
+
+* Get help from rust-users etc to make the `Tokens` trait cleaner.
+* micro-benchmarks: Write some, make it faster!
+* fuzz testing: Write some, find bugs!
+
+### Blog
+
+* Write Blog post about use of private tests for encapsulated packages
+* Concretize ideas for data viz blog post comparing Fano, Shannon and Huffman
+  encodings
+  * [extra credit] WASM compilation of cshannon to allow users to input text.
+
