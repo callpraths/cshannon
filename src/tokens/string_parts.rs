@@ -18,6 +18,7 @@ use crate::tokens::{Token, TokenIter, TokenPacker};
 use unicode_segmentation::{self, UnicodeSegmentation};
 
 use anyhow::{Error, Result};
+use log::{log_enabled, trace, Level};
 use std::convert::{From, Into};
 use std::marker::PhantomData;
 
@@ -82,6 +83,12 @@ where
         };
         let result = i.next();
         std::mem::swap(&mut Some(Ok(i)), &mut self.0);
+
+        if log_enabled!(Level::Trace) {
+            if let Some(v) = &result {
+                trace!("iter: |{}|", v);
+            }
+        }
         result.map(Ok)
     }
 }
@@ -103,6 +110,7 @@ where
     {
         for s in i {
             let buf: String = s.into();
+            trace!("pack: |{}|", &buf);
             if let Err(e) = w.write_all(buf.as_bytes()) {
                 return Err(Error::new(e));
             }

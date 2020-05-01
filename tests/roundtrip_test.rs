@@ -34,7 +34,6 @@ About my neck was hung\
 // roundtrip is currently broken.
 // Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
-#[ignore]
 fn test_bytes_roundrip() {
     // We freely unwrap() here since this is a simplistic integration test.
     let work_dir = tempfile::tempdir().unwrap();
@@ -74,7 +73,6 @@ fn test_bytes_roundrip() {
 // roundtrip is currently broken.
 // Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
-#[ignore]
 fn test_graphemes_roundrip() {
     // We freely unwrap() here since this is a simplistic integration test.
     let work_dir = tempfile::tempdir().unwrap();
@@ -114,7 +112,6 @@ fn test_graphemes_roundrip() {
 // roundtrip is currently broken.
 // Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
-#[ignore]
 fn test_words_roundrip() {
     // We freely unwrap() here since this is a simplistic integration test.
     let work_dir = tempfile::tempdir().unwrap();

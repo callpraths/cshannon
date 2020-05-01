@@ -14,6 +14,7 @@
 
 use super::common::{pack_u64, unpack_u64, BIT_HOLE_MASKS};
 use anyhow::{anyhow, Result};
+use log::trace;
 use std::convert::TryInto;
 use std::fmt;
 
@@ -101,6 +102,7 @@ impl Peephole for Letter {
     }
 
     fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()> {
+        trace!("pack: |{}|", &self);
         w.write_all(&pack_u64(self.bit_count))?;
         w.write_all(&self.data)?;
         Ok(())
@@ -111,7 +113,9 @@ impl Peephole for Letter {
         let byte_count = (bit_count + 7) / 8;
         let mut data = vec![0u8; byte_count.try_into().unwrap()];
         r.read_exact(&mut data)?;
-        Ok(Self { bit_count, data })
+        let l = Self { bit_count, data };
+        trace!("unpack: |{}|", &l);
+        Ok(l)
     }
 }
 

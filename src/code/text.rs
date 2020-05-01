@@ -16,6 +16,7 @@ use super::alphabet::{Alphabet, Node, Peephole as aPeephole};
 use super::common::BIT_HOLE_MASKS;
 use super::letter::{Letter, Peephole as lPeephole};
 use anyhow::{anyhow, Error, Result};
+use log::trace;
 use std::u64;
 
 /// Write a packed stream of letters.
@@ -30,6 +31,7 @@ where
     let mut byte_buffer_len: u64 = 0; // In practice <= 7
     let mut byte_buffer: u8 = 0;
     for l in letters {
+        trace!("pack: |{}|", &l);
         let mut has_more_bytes = true;
         let mut remaining_bit_count = l.bit_count();
         for b in l.data().iter() {
@@ -128,6 +130,7 @@ where
         trivial_tail: bool,
     ) -> Option<Result<&'a Letter>> {
         if let Node::Leaf { letter } = node {
+            trace!("parse: |{}|", &letter);
             return Some(Ok(letter));
         }
 

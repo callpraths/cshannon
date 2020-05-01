@@ -58,7 +58,9 @@ impl LetterGenerator {
         }
         Ok(Self {
             bit_count,
-            current: 0,
+            // Do not use the code all-0s as it is indistinguishable from
+            // trailing 0s when decompressing text.
+            current: 1,
             max: 1 << bit_count,
         })
     }
@@ -83,18 +85,10 @@ impl Iterator for LetterGenerator {
 }
 
 // TODO: rename
-fn log2(mut n: u64) -> u64 {
-    if n > 0 {
-        n -= 1;
-    }
+fn log2(n: u64) -> u64 {
     let max = std::mem::size_of::<u64>() as u64 * 8;
     let zeroes = n.leading_zeros() as u64;
-    let bit_count = max - zeroes;
-    if bit_count == 0 {
-        1
-    } else {
-        bit_count
-    }
+    max - zeroes
 }
 
 #[cfg(test)]
@@ -118,7 +112,7 @@ mod tests {
         let m = model::with_frequencies([(I32Token(1), 2)].iter().cloned().collect());
         let t = new(m).unwrap();
         assert_eq!(t.alphabet().len(), 1);
-        let want: HashMap<I32Token, Letter> = [(I32Token(1), Letter::new(&[0x00], 1))]
+        let want: HashMap<I32Token, Letter> = [(I32Token(1), Letter::new(&[0b1000_0000], 1))]
             .iter()
             .cloned()
             .collect();
@@ -126,7 +120,28 @@ mod tests {
     }
 
     #[test]
-    fn four_tokens() {
+    fn max_tokens_for_some_tree_height() {
+        let m = model::with_frequencies(
+            [(I32Token(1), 1), (I32Token(2), 2), (I32Token(3), 3)]
+                .iter()
+                .cloned()
+                .collect(),
+        );
+        let t = new(m).unwrap();
+        assert_eq!(t.alphabet().len(), 3);
+        let want: HashMap<I32Token, Letter> = [
+            (I32Token(3), Letter::new(&[0b0100_0000], 2)),
+            (I32Token(2), Letter::new(&[0b1000_0000], 2)),
+            (I32Token(1), Letter::new(&[0b1100_0000], 2)),
+        ]
+        .iter()
+        .cloned()
+        .collect();
+        assert_eq!(t.map(), &want);
+    }
+
+    #[test]
+    fn max_tokens_for_some_tree_height_then_one() {
         let m = model::with_frequencies(
             [
                 (I32Token(1), 1),
@@ -141,10 +156,10 @@ mod tests {
         let t = new(m).unwrap();
         assert_eq!(t.alphabet().len(), 4);
         let want: HashMap<I32Token, Letter> = [
-            (I32Token(4), Letter::new(&[0b0000_0000], 2)),
-            (I32Token(3), Letter::new(&[0b0100_0000], 2)),
-            (I32Token(2), Letter::new(&[0b1000_0000], 2)),
-            (I32Token(1), Letter::new(&[0b1100_0000], 2)),
+            (I32Token(4), Letter::new(&[0b0010_0000], 3)),
+            (I32Token(3), Letter::new(&[0b0100_0000], 3)),
+            (I32Token(2), Letter::new(&[0b0110_0000], 3)),
+            (I32Token(1), Letter::new(&[0b1000_0000], 3)),
         ]
         .iter()
         .cloned()
