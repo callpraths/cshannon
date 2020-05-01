@@ -15,7 +15,6 @@ reasonable, and readability is prioritized over efficiency.
 
 ### Hygiene
 
-* Github CI setup
 * Github badge setup
 * Create crate and releases.
 
