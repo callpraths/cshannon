@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/callpraths/cshannon.svg?branch=master)](https://travis-ci.com/github/callpraths/cshannon)
+
 # cshannon
 
 Compression and Decompression a la Shannon's algorithm.
