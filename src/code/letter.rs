@@ -49,20 +49,56 @@ impl Letter {
             data: data[0..num_bytes].to_vec(),
             bit_count,
         };
-        if bit_count % 8 == 0 {
-            return l;
-        }
-
-        let mut mask: u8 = 0;
-        for i in 0..bit_count % 8 {
-            mask |= BIT_HOLE_MASKS[i as usize];
-        }
-        l.data[num_bytes - 1] &= mask;
+        l.clear_trailing_bits();
         l
     }
 
+    fn clear_trailing_bits(&mut self) {
+        if self.bit_count % 8 == 0 {
+            return;
+        }
+        let mut mask: u8 = 0;
+        for i in 0..self.bit_count % 8 {
+            mask |= BIT_HOLE_MASKS[i as usize];
+        }
+        let last = self.data.len() - 1;
+        self.data[last] &= mask;
+    }
+
+    /// Creates a new `Letter` with 0 bits.
+    ///
+    /// Useful for incremental construction with Letter::push0() and
+    /// Letter::push1().
+    pub fn empty() -> Self {
+        Letter::with_capacity(0)
+    }
+
+    /// Creates a new `Letter` with 0 bits but with capacity hint, in bit count.
+    ///
+    /// Useful for incremental construction with Letter::push0() and
+    /// Letter::push1().
+    pub fn with_capacity(capacity: u64) -> Self {
+        Self {
+            data: Vec::with_capacity(((capacity + 7) / 8) as usize),
+            bit_count: 0,
+        }
+    }
+
+    /// Creates a new `Letter` with the given data.
+    ///
+    /// The created letter has bit_count of 8 * len(bytes).
     pub fn from_bytes(bytes: &[u8]) -> Self {
         Self::new(bytes, 8 * bytes.len() as u64)
+    }
+
+    /// Extend this Letter with a 0 bit.
+    pub fn push0(&mut self) {
+        self.push(false);
+    }
+
+    /// Extend this Letter with a 1 bit.
+    pub fn push1(&mut self) {
+        self.push(true)
     }
 
     /// Return whether the bit at given index is set.
@@ -79,6 +115,30 @@ impl Letter {
         let b = i / 8;
         let o = i % 8;
         Ok(self.data[b] & BIT_HOLE_MASKS[o] > 0)
+    }
+
+    fn push(&mut self, bit: bool) {
+        if self.bit_count == 8 * self.data.len() as u64 {
+            self.data.push(0u8);
+        }
+        self.bit_count += 1;
+        if bit {
+            self.set1((self.bit_count - 1) as usize);
+        }
+    }
+
+    fn set1(&mut self, i: usize) {
+        if i as u64 >= self.bit_count {
+            // set1() is not a public function.
+            // Out-of-bounds here is programming error.
+            panic!(
+                "index {} out of bounds of letter sized {}",
+                i, self.bit_count,
+            );
+        }
+        let b = i / 8;
+        let o = i % 8;
+        self.data[b] |= BIT_HOLE_MASKS[o];
     }
 }
 
@@ -148,5 +208,35 @@ mod tests {
             &vec![0b1000_0000u8]
         );
         assert_eq!(Letter::new(&[0b0000_1111], 4).data(), &vec![0b0000_0000u8]);
+    }
+
+    #[test]
+    fn empty() {
+        assert_eq!(Letter::empty(), Letter::new(&[0u8], 0));
+    }
+
+    #[test]
+    fn with_capacity() {
+        assert_eq!(Letter::with_capacity(24), Letter::new(&[0u8], 0));
+        assert_eq!(Letter::with_capacity(8).data.capacity(), 1);
+    }
+
+    #[test]
+    fn incremental_build() {
+        let mut l = Letter::empty();
+        l.push0();
+        l.push1();
+        l.push0();
+        l.push1();
+        assert_eq!(l, Letter::new(&[0b0101_0000], 4));
+    }
+
+    #[test]
+    fn incremental_build_extends_data() {
+        let mut l = Letter::with_capacity(16);
+        for _ in 0..11 {
+            l.push1();
+        }
+        assert_eq!(l, Letter::new(&[0xFF, 0b1110_0000], 11));
     }
 }

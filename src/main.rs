@@ -41,6 +41,20 @@ Must be one of:
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("encoding")
+                .long("encoding")
+                .short("e")
+                .required(true)
+                .help("Encoding to use")
+                .long_help(
+                    "Encoding to use.
+Must be one of:
+    balanced_tree: A fixed length encoding for all tokens.
+    shannon:       Shannon's encoding scheme.",
+                )
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("input_file")
                 .long("input-file")
                 .short("i")

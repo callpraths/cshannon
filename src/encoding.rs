@@ -17,6 +17,7 @@ use crate::tokens::Token;
 use std::collections::HashMap;
 
 pub mod balanced_tree;
+pub mod shannon;
 
 /// An `Encoding` maps `Token`s to `Letter`s.
 ///

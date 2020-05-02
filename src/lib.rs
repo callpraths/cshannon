@@ -21,36 +21,48 @@ pub mod encoding;
 pub mod model;
 pub mod tokens;
 
-use anyhow::{anyhow, Result};
 use code::Letter;
-use log::{info, trace};
-use std::io::Seek;
+use encoding::Encoding;
+use encoding::{balanced_tree, shannon};
+use model::Model;
 use tokens::bytes::{Byte, ByteIter, BytePacker};
 use tokens::graphemes::{Grapheme, GraphemeIter, GraphemePacker};
 use tokens::words::{Word, WordIter, WordPacker};
 use tokens::{Token, TokenIter, TokenPacker};
 
+use anyhow::{anyhow, Result};
 use env_logger::Env;
+use log::{info, trace};
 use std::collections::HashMap;
 use std::fs::File;
+use std::io::Seek;
 use std::io::{BufReader, BufWriter, Cursor};
 
 pub fn run(args: clap::ArgMatches) -> Result<()> {
     env_logger::from_env(Env::default().default_filter_or("warn")).init();
 
     // Safe to use unwrap() because these args are `required`.
+    let encoding = args.value_of("encoding").unwrap();
     let input_file = args.value_of("input_file").unwrap();
     let output_file = args.value_of("output_file").unwrap();
     let tokenizer_choice = args.value_of("tokenizer").unwrap();
     match args.subcommand_name() {
         Some("compress") => match tokenizer_choice {
-            "byte" => {
-                compress::<Byte, ByteIter<BufReader<File>>, BytePacker>(&input_file, &output_file)
-            }
-            "grapheme" => {
-                compress::<Grapheme, GraphemeIter, GraphemePacker>(&input_file, &output_file)
-            }
-            "word" => compress::<Word, WordIter, WordPacker>(&input_file, &output_file),
+            "byte" => compress::<Byte, ByteIter<BufReader<File>>, BytePacker>(
+                &input_file,
+                &output_file,
+                encoder(encoding)?,
+            ),
+            "grapheme" => compress::<Grapheme, GraphemeIter, GraphemePacker>(
+                &input_file,
+                &output_file,
+                encoder(encoding)?,
+            ),
+            "word" => compress::<Word, WordIter, WordPacker>(
+                &input_file,
+                &output_file,
+                encoder(encoding)?,
+            ),
             _ => Err(anyhow!("invalid tokenizer {}", tokenizer_choice)),
         },
         Some("decompress") => match tokenizer_choice {
@@ -71,9 +83,23 @@ pub fn run(args: clap::ArgMatches) -> Result<()> {
     }
 }
 
+type Encoder<T> = fn(Model<T>) -> Result<Encoding<T>>;
+
+fn encoder<T: Token>(encoding: &str) -> Result<Encoder<T>> {
+    match encoding {
+        "balanced_tree" => Ok(balanced_tree::new::<T>),
+        "shannon" => Ok(shannon::new::<T>),
+        _ => Err(anyhow!("invalid encoding {}", encoding)),
+    }
+}
+
 /// Document me.
 /// TODO: Convert to use AsRef<Path>
-pub fn compress<T, TIter, TPacker>(input_file: &str, output_file: &str) -> Result<()>
+pub fn compress<T, TIter, TPacker>(
+    input_file: &str,
+    output_file: &str,
+    encoder: Encoder<T>,
+) -> Result<()>
 where
     T: Token,
     TIter: TokenIter<BufReader<File>, T = T>,
@@ -82,7 +108,7 @@ where
     info!("Compressing...");
     let r = BufReader::new(File::open(input_file)?);
     let tokens = TIter::unpack(r).map(|r| r.unwrap());
-    let encoding = crate::encoding::balanced_tree::new(model::from(tokens))?;
+    let encoding = encoder(model::from(tokens))?;
 
     let r = BufReader::new(File::open(input_file)?);
     let tokens = TIter::unpack(r).map(|r| r.unwrap());
