@@ -17,7 +17,7 @@ use crate::code::Letter;
 use crate::model::Model;
 use crate::tokens::Token;
 use anyhow::Result;
-use log::trace;
+use log::{debug, log_enabled, Level};
 use std::collections::HashMap;
 
 /// Create a new Shannon `Encoding`.
@@ -60,6 +60,21 @@ where
         panic!("failed to obtain last item from a vector");
     }
 
+    if log_enabled!(Level::Debug) {
+        let tk = m.tokens_sorted();
+        let ck = CumulativeProbabilities::new(&m);
+        debug!("t \t f \t l \t c \t e");
+        for (dt, dc) in tk.iter().zip(ck) {
+            let df = m.probability(dt);
+            let dl = l(df);
+            if let Some(de) = map.get(dt) {
+                debug!("{}\t{}\t{}\t{}\t{}", dt, df, dl, dc, de);
+            } else {
+                debug!("{}\t{}\t{}\t{}\tNO LETTER", dt, df, dl, dc);
+            }
+        }
+    }
+
     Ok(Encoding::new(map)?)
 }
 
@@ -78,7 +93,6 @@ fn e(mut c: f64, l: u64) -> Letter {
             letter.push0();
         }
     }
-    trace!("next letter: {}", letter);
     letter
 }
 
@@ -103,7 +117,6 @@ fn e_terminal(l: u64) -> Letter {
         letter.push0();
     }
     letter.push1();
-    trace!("terminal letter: {}", letter);
     letter
 }
 
