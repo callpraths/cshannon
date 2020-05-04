@@ -22,7 +22,7 @@ fn roundtrip() {
     let l1 = code::Letter::new(&[0b1100_0000], 4);
     let l2 = code::Letter::from_bytes(&[0b0101_1101]);
 
-    let alphabet = code::Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone()]);
+    let alphabet = code::Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone()]).unwrap();
     let text = vec![
         l1.clone(),
         l2.clone(),

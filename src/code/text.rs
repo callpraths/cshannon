@@ -345,7 +345,7 @@ mod parse_tests {
 
     #[test]
     fn empty() {
-        let a = Alphabet::new(vec![Letter::from_bytes(&[0xff])]);
+        let a = Alphabet::new(vec![Letter::from_bytes(&[0xff])]).unwrap();
         let t: Vec<u8> = vec![];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         let c = r.unwrap();
@@ -359,7 +359,7 @@ mod parse_tests {
         let l2 = Letter::from_bytes(&[0x22]);
         let l3 = Letter::from_bytes(&[0x33]);
 
-        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]);
+        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]).unwrap();
         let t: Vec<u8> = vec![0x00, 0x22, 0x33, 0x22, 0x33, 0x00];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         let c = r.unwrap();
@@ -373,7 +373,7 @@ mod parse_tests {
         let l2 = Letter::from_bytes(&[0b0010_1111]);
         let l3 = Letter::from_bytes(&[0b0011_0000]);
 
-        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]);
+        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]).unwrap();
         let t: Vec<u8> = vec![
             0b0000_0000,
             0b0010_1111,
@@ -394,7 +394,7 @@ mod parse_tests {
         let l2 = Letter::from_bytes(&[0x00, 0x01]);
         let l3 = Letter::from_bytes(&[0x11]);
 
-        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]);
+        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]).unwrap();
         let t: Vec<u8> = vec![0x00, 0x11, 0x00, 0x01, 0x11, 0x00, 0x01, 0x11, 0x00, 0x11];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         let c = r.unwrap();
@@ -406,7 +406,7 @@ mod parse_tests {
         let l0 = Letter::new(&[0b1000_0000], 3);
         let l1 = Letter::new(&[0b0100_0000], 2);
 
-        let a = Alphabet::new(vec![l0.clone(), l1.clone()]);
+        let a = Alphabet::new(vec![l0.clone(), l1.clone()]).unwrap();
         let t: Vec<u8> = vec![0b100_01_100, 0b01_100_100];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         let c = r.unwrap();
@@ -418,7 +418,7 @@ mod parse_tests {
         let l0 = Letter::new(&[0b1000_0000], 3);
         let l1 = Letter::new(&[0b0100_0000], 2);
 
-        let a = Alphabet::new(vec![l0.clone(), l1.clone()]);
+        let a = Alphabet::new(vec![l0.clone(), l1.clone()]).unwrap();
         let t: Vec<u8> = vec![0b100_01_100, 0b01_01_0000];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         let c = r.unwrap();
@@ -430,7 +430,7 @@ mod parse_tests {
         let l0 = Letter::new(&[0b1000_0001, 0b1100_0000], 10);
         let l1 = Letter::new(&[0b1000_0001, 0b1000_0000], 13);
 
-        let a = Alphabet::new(vec![l0.clone(), l1.clone()]);
+        let a = Alphabet::new(vec![l0.clone(), l1.clone()]).unwrap();
         let t: Vec<u8> = vec![
             0b1000_0001,
             0b11__1000_00,
@@ -450,7 +450,7 @@ mod parse_tests {
     fn incomplete() {
         let l0 = Letter::from_bytes(&[0x11, 0x00]);
 
-        let a = Alphabet::new(vec![l0.clone()]);
+        let a = Alphabet::new(vec![l0.clone()]).unwrap();
         let t: Vec<u8> = vec![0x11];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         assert!(r.is_err());
@@ -460,7 +460,7 @@ mod parse_tests {
     fn nonexistent_letter() {
         let l0 = Letter::from_bytes(&[0x11, 0x00]);
 
-        let a = Alphabet::new(vec![l0.clone()]);
+        let a = Alphabet::new(vec![l0.clone()]).unwrap();
         let t: Vec<u8> = vec![0x10, 0x00];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         assert!(r.is_err());
@@ -470,7 +470,7 @@ mod parse_tests {
     fn trailing_data() {
         let l0 = Letter::from_bytes(&[0x11]);
 
-        let a = Alphabet::new(vec![l0.clone()]);
+        let a = Alphabet::new(vec![l0.clone()]).unwrap();
         let t: Vec<u8> = vec![0x11, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         assert!(r.is_err());

@@ -14,6 +14,7 @@
 
 use crate::code::{Alphabet, Letter};
 use crate::tokens::Token;
+use anyhow::Result;
 use std::collections::HashMap;
 
 pub mod balanced_tree;
@@ -22,14 +23,17 @@ pub mod shannon;
 /// An `Encoding` maps `Token`s to `Letter`s.
 ///
 /// `Encoding`s are usually created by processing a `Model`.
-pub struct Encoding<T: Token>(HashMap<T, Letter>);
+pub struct Encoding<T: Token> {
+    map: HashMap<T, Letter>,
+    alphabet: Alphabet,
+}
 
 impl<T: Token> Encoding<T> {
     /// The `Alphabet` of `Letter`s used by this `Encoding`.
     ///
     /// The `Letter`s are returned in a stable order.
-    pub fn alphabet(&self) -> Alphabet {
-        Alphabet::new(self.sorted_letters().into_iter().cloned().collect())
+    pub fn alphabet(&self) -> &Alphabet {
+        &self.alphabet
     }
 
     /// The `Token`s covered by this `Encoding`.
@@ -38,28 +42,29 @@ impl<T: Token> Encoding<T> {
     /// of `Letter`s in self.alphabet()
     pub fn tokens(&self) -> Vec<T> {
         let m = self.reverse_map();
-        self.sorted_letters()
-            .into_iter()
-            .map(|l| m[l].clone())
-            .collect()
+        let mut letters: Vec<&Letter> = self.map.values().collect();
+        letters.sort();
+        letters.into_iter().map(|l| m[l].clone()).collect()
     }
 
     /// The `Encoding` map.
     ///
     /// Exposes the internal HashMap via an immutable reference.
     pub fn map(&self) -> &HashMap<T, Letter> {
-        &self.0
+        &self.map
     }
 
-    fn sorted_letters(&self) -> Vec<&Letter> {
-        let mut letters: Vec<&Letter> = self.0.values().collect();
+    /// `Encoding` implementations should use `new` to create an `Encoding`.
+    fn new(map: HashMap<T, Letter>) -> Result<Self> {
+        let mut letters: Vec<&Letter> = map.values().collect();
         letters.sort();
-        letters
+        let alphabet = Alphabet::new(letters.into_iter().cloned().collect())?;
+        Ok(Self { map, alphabet })
     }
 
     fn reverse_map(&self) -> HashMap<&Letter, &T> {
         let mut m = HashMap::new();
-        for (t, l) in &self.0 {
+        for (t, l) in &self.map {
             m.insert(l, t);
         }
         m

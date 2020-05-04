@@ -24,8 +24,10 @@ impl Alphabet {
     /// Create a new Alphabet with the given Letters.Alphabet
     ///
     /// The order of Letters is significant. pack()/unpack() conserve the order.
-    pub fn new(letters: Vec<Letter>) -> Self {
-        Alphabet(letters)
+    pub fn new(letters: Vec<Letter>) -> Result<Self> {
+        let a = Alphabet(letters);
+        a.validate()?;
+        Ok(a)
     }
 
     /// Number of letters in the `Alphabet`.
@@ -41,6 +43,16 @@ impl Alphabet {
     /// Return a reference to the ordered `Letter`s in this `Alphabet`.
     pub fn letters(&self) -> &Vec<Letter> {
         &self.0
+    }
+}
+
+impl Alphabet {
+    fn validate(&self) -> Result<()> {
+        for l in self.0.iter() {
+            l.validate()?;
+        }
+        self.tree()?;
+        Ok(())
     }
 }
 
@@ -89,13 +101,15 @@ pub trait Peephole {
 
 impl Peephole for Alphabet {
     fn tree<'a>(&'a self) -> Result<Node<'a>> {
-        if self.0.is_empty() {
-            return Err(anyhow!("no letters"));
-        }
         let mut root = Node::Internal {
             zero: None,
             one: None,
         };
+        if self.0.is_empty() {
+            // Attempt to parse _any_ text will fail, since the Alphabet is
+            // empty.
+            return Ok(root);
+        }
         for l in self.0.iter() {
             let (tip, offset) = Alphabet::follow_branch(&mut root, l, 0)?;
             let tail = Alphabet::tail(l, offset + 1);
@@ -210,7 +224,7 @@ mod pack_tests {
 
     #[test]
     fn roundtrip_trivial() {
-        let a = Alphabet::new(vec![]);
+        let a = Alphabet::new(vec![]).unwrap();
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
@@ -220,7 +234,7 @@ mod pack_tests {
     #[test]
     fn roundtrip_single_letter() {
         let v = vec![Letter::from_bytes(&[0b10000001])];
-        let a = Alphabet::new(v.clone());
+        let a = Alphabet::new(v.clone()).unwrap();
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
@@ -230,7 +244,7 @@ mod pack_tests {
     #[test]
     fn roundtrip_single_letter_zeroes() {
         let v = vec![Letter::from_bytes(&[0])];
-        let a = Alphabet::new(v.clone());
+        let a = Alphabet::new(v.clone()).unwrap();
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
@@ -243,7 +257,7 @@ mod pack_tests {
             Letter::from_bytes(&[0b10000000]),
             Letter::from_bytes(&[0b00000111]),
         ];
-        let a = Alphabet::new(v.clone());
+        let a = Alphabet::new(v.clone()).unwrap();
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
@@ -256,7 +270,7 @@ mod pack_tests {
             Letter::from_bytes(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99]),
             Letter::from_bytes(&[0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9]),
         ];
-        let a = Alphabet::new(v.clone());
+        let a = Alphabet::new(v.clone()).unwrap();
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
@@ -276,7 +290,7 @@ mod pack_tests {
             Letter::from_bytes(&[0x18]),
             Letter::from_bytes(&[0x19]),
         ];
-        let a = Alphabet::new(v.clone());
+        let a = Alphabet::new(v.clone()).unwrap();
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
@@ -292,7 +306,7 @@ mod pack_tests {
             Letter::from_bytes(&[0xc1, 0xc2]),
             Letter::from_bytes(&[0xd1]),
         ];
-        let a = Alphabet::new(v.clone());
+        let a = Alphabet::new(v.clone()).unwrap();
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
@@ -301,8 +315,11 @@ mod pack_tests {
 
     #[test]
     fn roundtrip_unaligned_lengths() {
-        let v = vec![Letter::new(&[0b111], 3), Letter::new(&[0b100, 0x11], 11)];
-        let a = Alphabet::new(v.clone());
+        let v = vec![
+            Letter::new(&[0b1110_0000], 3),
+            Letter::new(&[0b1000_0000, 0x11], 11),
+        ];
+        let a = Alphabet::new(v.clone()).unwrap();
         let mut packed = Vec::<u8>::new();
         assert!(a.pack(&mut packed).is_ok());
         let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
@@ -316,28 +333,34 @@ mod tree_tests {
 
     #[test]
     fn empty() {
-        let a = Alphabet::new(vec![]);
-        assert!(a.tree().is_err())
+        let a = Alphabet::new(vec![]).unwrap();
+        assert_eq!(
+            a.tree().unwrap(),
+            Node::Internal {
+                zero: None,
+                one: None
+            }
+        );
     }
 
     #[test]
     fn leaf0() {
         let l = Letter::new(&[0b0], 1);
-        let a = Alphabet::new(vec![l.clone()]);
+        let a = Alphabet::new(vec![l.clone()]).unwrap();
         assert_eq!(a.tree().unwrap(), Node::new0(Node::newl(&l)),);
     }
 
     #[test]
     fn leaf1() {
         let l = Letter::new(&[0b1000_0000], 1);
-        let a = Alphabet::new(vec![l.clone()]);
+        let a = Alphabet::new(vec![l.clone()]).unwrap();
         assert_eq!(a.tree().unwrap(), Node::new1(Node::newl(&l)));
     }
 
     #[test]
     fn multi_byte_letter() {
         let l = Letter::new(&[0b1000_0000, 0b1100_0000], 10);
-        let a = Alphabet::new(vec![l.clone()]);
+        let a = Alphabet::new(vec![l.clone()]).unwrap();
         assert_eq!(
             a.tree().unwrap(),
             Node::new1(Node::new0(Node::new0(Node::new0(Node::new0(Node::new0(
@@ -350,7 +373,7 @@ mod tree_tests {
     fn unshared_letters() {
         let l0 = Letter::new(&[0b0], 1);
         let l1 = Letter::new(&[0b1000_0000], 1);
-        let a = Alphabet::new(vec![l0.clone(), l1.clone()]);
+        let a = Alphabet::new(vec![l0.clone(), l1.clone()]).unwrap();
         assert_eq!(
             a.tree().unwrap(),
             Node::new(Node::newl(&l0), Node::newl(&l1)),
@@ -361,7 +384,7 @@ mod tree_tests {
     fn shared_letters() {
         let l0 = Letter::new(&[0b0100_0000], 3);
         let l1 = Letter::new(&[0b0110_0000], 4);
-        let a = Alphabet::new(vec![l0.clone(), l1.clone()]);
+        let a = Alphabet::new(vec![l0.clone(), l1.clone()]).unwrap();
         assert_eq!(
             a.tree().unwrap(),
             Node::new0(Node::new1(Node::new(
@@ -377,7 +400,7 @@ mod tree_tests {
         let l1 = Letter::new(&[0b1000_0000, 0b0000_0000], 10);
         let l2 = Letter::new(&[0b1010_0000], 3);
         let l3 = Letter::new(&[0b0000_0000], 3);
-        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]);
+        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]).unwrap();
         assert_eq!(
             a.tree().unwrap(),
             Node::new(

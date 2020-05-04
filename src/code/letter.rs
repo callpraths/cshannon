@@ -144,6 +144,7 @@ impl Letter {
 
 /// Provides deeper access for sibling modules than the public API.
 pub trait Peephole {
+    fn validate(&self) -> Result<()>;
     fn data<'a>(&'a self) -> &'a Vec<u8>;
     fn bit_count(&self) -> u64;
     fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()>;
@@ -153,6 +154,13 @@ pub trait Peephole {
 }
 
 impl Peephole for Letter {
+    fn validate(&self) -> Result<()> {
+        if self.all_zeroes() {
+            anyhow!("letter {} is all 0s", self);
+        }
+        Ok(())
+    }
+
     fn data<'a>(&'a self) -> &'a Vec<u8> {
         &self.data
     }
@@ -176,6 +184,17 @@ impl Peephole for Letter {
         let l = Self { bit_count, data };
         trace!("unpack: |{}|", &l);
         Ok(l)
+    }
+}
+
+impl Letter {
+    fn all_zeroes(&self) -> bool {
+        for i in 0..self.bit_count {
+            if self.at(i as usize).unwrap() {
+                return false;
+            }
+        }
+        true
     }
 }
 

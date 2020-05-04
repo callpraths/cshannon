@@ -44,7 +44,7 @@ where
     let lk = fk.map(l);
     let ck = CumulativeProbabilities::new(&m);
     let ek = ck.zip(lk).map(|(c, l)| e(c, l));
-    Ok(Encoding(tk.iter().cloned().zip(ek).collect()))
+    Ok(Encoding::new(tk.iter().cloned().zip(ek).collect())?)
 }
 
 fn l(f: f64) -> u64 {

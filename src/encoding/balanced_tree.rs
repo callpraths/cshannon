@@ -30,7 +30,7 @@ pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
 where
     T: Token,
 {
-    let mut encoding = Encoding::<T>(HashMap::new());
+    let mut map = HashMap::new();
     let mut letter_generator = LetterGenerator::new(log2(m.len() as u64))?;
     for t in m.tokens_sorted() {
         match letter_generator.next() {
@@ -38,11 +38,11 @@ where
             // out of letters.
             None => panic!("Ran out of letters".to_owned()),
             Some(l) => {
-                encoding.0.insert(t, l);
+                map.insert(t, l);
             }
         }
     }
-    Ok(encoding)
+    Ok(Encoding::new(map)?)
 }
 
 struct LetterGenerator {

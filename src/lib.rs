@@ -116,7 +116,7 @@ where
 
     let mut w = BufWriter::new(File::create(output_file)?);
     crate::tokens::pack_all::<_, _, TPacker>(encoding.tokens(), &mut w)?;
-    encoding.alphabet().pack(&mut w)?;
+    encoding.alphabet().clone().pack(&mut w)?;
     crate::code::pack(code_text, &mut w)?;
     Ok(())
 }
