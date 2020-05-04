@@ -20,6 +20,7 @@ pub mod coder;
 pub mod encoding;
 pub mod model;
 pub mod tokens;
+mod util;
 
 use code::Letter;
 use encoding::Encoding;
