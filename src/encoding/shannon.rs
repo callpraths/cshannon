@@ -46,19 +46,7 @@ where
     let lk = fk.map(l);
     let ck = CumulativeProbabilities::new(&m);
     let ek = ck.zip(lk).map(|(c, l)| e(c, l));
-    let mut map: HashMap<T, Letter> = tk.iter().cloned().zip(ek).collect();
-
-    // Need to fixup the code for the last token.
-    // See comments in e_terminal() for details.
-    if let Some(t_last) = tk.last() {
-        if let Some(e_last) = map.get_mut(t_last) {
-            *e_last = e_terminal(l(m.probability(t_last)));
-        } else {
-            panic!("did not find a code for the last token {}", t_last);
-        }
-    } else {
-        panic!("failed to obtain last item from a vector");
-    }
+    let map: HashMap<T, Letter> = tk.iter().cloned().zip(ek).collect();
 
     if log_enabled!(Level::Debug) {
         let tk = m.tokens_sorted();
@@ -67,11 +55,8 @@ where
         for (dt, dc) in tk.iter().zip(ck) {
             let df = m.probability(dt);
             let dl = l(df);
-            if let Some(de) = map.get(dt) {
-                debug!("{}\t{}\t{}\t{}\t{}", dt, df, dl, dc, de);
-            } else {
-                debug!("{}\t{}\t{}\t{}\tNO LETTER", dt, df, dl, dc);
-            }
+            let de = e(dc, dl);
+            debug!("{}\t{}\t{}\t{}\t{}", dt, df, dl, dc, de);
         }
     }
 
@@ -82,41 +67,28 @@ fn l(f: f64) -> u64 {
     (-f.log2()).ceil() as u64
 }
 
-fn e(mut c: f64, l: u64) -> Letter {
+fn e(c: f64, l: u64) -> Letter {
     let mut letter = Letter::with_capacity(l);
+    let mut mut_c = c;
     for _ in 0..l {
-        c *= 2.0;
-        if c > 1.0 {
+        mut_c *= 2.0;
+        if mut_c > 1.0 {
             letter.push1();
-            c -= 1.0;
+            mut_c -= 1.0;
         } else {
             letter.push0();
         }
     }
-    letter
-}
-
-// Shannon's encoding scheme has a discontinuity at the last token.
-// Theoretically, the cumulative probability for the last token is 1.0
-// The part before "1" is ignored when computing the code.
-//
-// This creates problem when paired with imprecise floating point arithmetic: A
-// small change in the cumulative frequency at 1.0 leads to a huge difference in
-// the code.
-//
-// e.g., code for 1.0 (with 4 bits) -> 0000
-//       code for 0.9999 (with 4 bits) -> 1111
-//
-// The true Shannon code for this should be all 0s, but that is not allowed
-// in our implementation, so we tack on a trailing 1.
-// It is safe to add a trailing 1 because the initial 0s already ensure that
-// the prefix condition is satisfied.
-fn e_terminal(l: u64) -> Letter {
-    let mut letter = Letter::with_capacity(l);
-    for _ in 0..l {
-        letter.push0();
+    // The correct Shannon encoding for this consists of all zeroes, but
+    // `Letter` with all zeroes is disallowed in this implementation.
+    // We simply tack on a "1" at the end. Adding a "1" at the end does not
+    // break the "prefix property" of the encoding, so it is safe.
+    //
+    // It does make the encoding for the most frequently occurring `Token`
+    // longer. Thus, it can have a large impact on the compression ratio.
+    if c == 0.0 {
+        letter.push1();
     }
-    letter.push1();
     letter
 }
 
@@ -141,8 +113,9 @@ impl<'a, T: Token> Iterator for CumulativeProbabilities<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(t) = self.tokens.next() {
+            let old_sum = self.sum;
             self.sum += self.m.probability(&t);
-            Some(self.sum)
+            Some(old_sum)
         } else {
             None
         }
@@ -162,9 +135,9 @@ mod tests {
         testing::init_logs_for_test();
         // f: 0.4, 0.3, 0.2, 0.1
         // l: 2, 2, 3, 4
-        // c: 0.4, 0.7, 0.9, 1.0
-        // e: 01, 10, 111, 0000
-        // e[corrected for all 0s]: 01, 10, 111, 0000_1
+        // c: 0.0, 0.4, 0.7, 0.9
+        // e: 00, 01, 101, 1110
+        // e[corrected for all 0s]: 001, 01, 101, 1110
         let m = model::with_frequencies(
             [
                 (I32Token(1), 4),
@@ -179,10 +152,10 @@ mod tests {
         let t = new(m).unwrap();
         assert_eq!(t.alphabet().len(), 4);
         let want: HashMap<I32Token, Letter> = [
-            (I32Token(1), Letter::new(&[0b0100_0000], 2)),
-            (I32Token(2), Letter::new(&[0b1000_0000], 2)),
-            (I32Token(3), Letter::new(&[0b1110_0000], 3)),
-            (I32Token(4), Letter::new(&[0b0000_1000], 5)),
+            (I32Token(1), Letter::new(&[0b0010_0000], 3)),
+            (I32Token(2), Letter::new(&[0b0100_0000], 2)),
+            (I32Token(3), Letter::new(&[0b1010_0000], 3)),
+            (I32Token(4), Letter::new(&[0b1110_0000], 4)),
         ]
         .iter()
         .cloned()
