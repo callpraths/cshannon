@@ -11,13 +11,11 @@ reasonable, and readability is prioritized over efficiency.
 
 ### Implemenation
 
-* Implement Shannon encoding scheme
 * Implement Fano encoding scheme
 * Implement Huffman encoding scheme
 
 ### Hygiene
 
-* Github badge setup
 * Create crate and releases.
 
 ### Learn
