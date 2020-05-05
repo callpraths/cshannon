@@ -93,7 +93,6 @@ fn words_balanced_tree() {
 
 // Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
-#[ignore]
 fn bytes_shannon() {
     roundtrip(TEXT, "byte", "shannon");
 }
@@ -101,7 +100,6 @@ fn bytes_shannon() {
 // roundtrip is currently broken.
 // Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
-#[ignore]
 fn graphemes_shannon() {
     roundtrip(TEXT, "grapheme", "shannon");
 }
@@ -109,7 +107,6 @@ fn graphemes_shannon() {
 // roundtrip is currently broken.
 // Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
-#[ignore]
 fn words_shannon() {
     roundtrip(TEXT_ONLY_WORDS, "word", "shannon");
 }
