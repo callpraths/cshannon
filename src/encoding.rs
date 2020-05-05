@@ -18,6 +18,7 @@ use anyhow::Result;
 use std::collections::HashMap;
 
 pub mod balanced_tree;
+pub mod fano;
 pub mod shannon;
 
 /// An `Encoding` maps `Token`s to `Letter`s.
