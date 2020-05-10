@@ -31,3 +31,12 @@ reasonable, and readability is prioritized over efficiency.
   encodings
   * [extra credit] WASM compilation of cshannon to allow users to input text.
 
+### Refactors
+
+* Accept vector of pairs in `model::with_frequencies()`  to reduce boilerplate
+  at call sites.
+* Accept vector of pairs to create `Encoding` in tests and implement `Eq` to
+  reduce assertion boilerplate in tests.
+* Deduplicate cumulative probability computation in `model::balanced_tree` vs
+  `model::fano`
+* Make `model::fano::Window` more readable by replacing tuple with struct.
