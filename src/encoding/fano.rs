@@ -17,6 +17,7 @@ use crate::code::Letter;
 use crate::model::Model;
 use crate::tokens::Token;
 use anyhow::Result;
+use log::trace;
 
 pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
 where
@@ -39,10 +40,34 @@ where
 #[derive(Debug, PartialEq)]
 struct Window<'a, T: Token>(&'a mut [(T, f64)]);
 
+impl<'a, T: Token> std::fmt::Display for Window<'a, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut first = true;
+        write!(f, "[")?;
+        for (t, c) in self.0.iter() {
+            if !first {
+                write!(f, ", ")?;
+            }
+            write!(f, "({}, {})", t, c)?;
+            first = false;
+        }
+        write!(f, "]")
+    }
+}
+
 #[derive(Debug, PartialEq)]
 enum Refinement<'a, T: Token> {
     Split(Window<'a, T>, Window<'a, T>),
     Terminal(T),
+}
+
+impl<'a, T: Token> std::fmt::Display for Refinement<'a, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Refinement::Split(left, right) => write!(f, "Split({}, {})", left, right),
+            Refinement::Terminal(t) => write!(f, "Terminal({})", t),
+        }
+    }
 }
 
 const LINEAR_SEARCH_THRESHOLD: usize = 6;
@@ -53,19 +78,23 @@ impl<'a, T: Token> Window<'a, T> {
     }
 
     pub fn refine(self) -> Refinement<'a, T> {
-        match self.0.len() {
+        trace!("refine({})", &self);
+        let ret = match self.0.len() {
             0 => panic!("Window must be at least length 1"),
             1 => Refinement::Terminal(self.0[0].0.clone()),
             _ => {
                 let split = self.find_split_binary_search(self.0[self.0.len() - 1].1 / 2.0);
                 self.split_at(split)
             }
-        }
+        };
+        trace!("  --> {}", &ret);
+        ret
     }
 
     fn find_split_binary_search(&self, mid_value: f64) -> usize {
         assert!(self.0.len() > 1);
-        let mut left: usize = 0;
+        // The left split must be non-empty, even if the mid_value is smaller.
+        let mut left: usize = 1;
         let mut right = self.0.len();
         while right - left > LINEAR_SEARCH_THRESHOLD {
             let mid = (left + right) / 2;
@@ -107,18 +136,45 @@ enum Frame<'a, T: Token> {
     Right,
 }
 
+impl<'a, T: Token> std::fmt::Display for Frame<'a, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Frame::Left { residual } => write!(f, "Left({})", residual),
+            Frame::Right => write!(f, "Right"),
+        }
+    }
+}
+
 struct CodeIter<'a, T: Token>(Vec<Frame<'a, T>>);
+
+impl<'a, T: Token> std::fmt::Display for CodeIter<'a, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+        let mut first = true;
+        for s in self.0.iter() {
+            if !first {
+                write!(f, " ")?;
+            }
+            write!(f, "<{}>", s)?;
+            first = false;
+        }
+        write!(f, "*")
+    }
+}
 
 impl<'a, T: Token> Iterator for CodeIter<'a, T> {
     type Item = (T, Letter);
 
     fn next(&mut self) -> Option<Self::Item> {
+        trace!("next({})", &self);
         let residual = match self.unroll() {
             None => return None,
             Some(residual) => residual,
         };
         self.0.push(Frame::Right);
-        Some(self.descend(residual))
+        let ret = self.descend(residual);
+        trace!(" --> ({}, {})", &ret.0, &ret.1);
+        Some(ret)
     }
 }
 
@@ -194,6 +250,17 @@ mod refinement_tests {
         } else {
             panic!("but you just said that the refinement was a window!");
         }
+    }
+
+    #[test]
+    fn two_elems_right_heavy() {
+        let mut data = vec![(I32Token(1), 0.7), (I32Token(2), 1.0)];
+        let mut left = vec![(I32Token(1), 0.7)];
+        let mut right = vec![(I32Token(2), 1.0)];
+        assert_eq!(
+            Window::new(&mut data).refine(),
+            Refinement::Split(Window::new(&mut left), Window::new(&mut right))
+        );
     }
 
     #[test]
@@ -382,5 +449,37 @@ mod refinement_tests {
         } else {
             panic!("refinement should be a Split");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::code::Letter;
+    use crate::model;
+    use crate::tokens::test_utils::I32Token;
+    use crate::util::testing;
+    use std::collections::HashMap;
+
+    #[test]
+    fn single_level() {
+        testing::init_logs_for_test();
+
+        let m = model::with_frequencies(
+            [(I32Token(1), 4), (I32Token(2), 3)]
+                .iter()
+                .cloned()
+                .collect(),
+        );
+        let t = new(m).unwrap();
+        assert_eq!(t.alphabet().len(), 2);
+        let want: HashMap<I32Token, Letter> = [
+            (I32Token(1), Letter::new(&[0b1000_0000], 2)),
+            (I32Token(2), Letter::new(&[0b1100_0000], 2)),
+        ]
+        .iter()
+        .cloned()
+        .collect();
+        assert_eq!(t.map(), &want);
     }
 }
