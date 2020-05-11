@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn empty() {
-        let m = model::with_frequencies(HashMap::<I32Token, i64>::new());
+        let m: Model<I32Token> = model::with_frequencies(HashMap::new());
         let t = new(m).unwrap();
         assert!(t.alphabet().is_empty());
         assert!(t.map().is_empty());

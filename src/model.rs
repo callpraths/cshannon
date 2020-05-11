@@ -22,13 +22,13 @@ use std::collections::HashMap;
 pub struct Model<T: Token>(HashMap<T, Stats>);
 
 struct Stats {
-    f: i64,
+    f: u64,
     p: f64,
 }
 
 impl<T: Token> Model<T> {
     /// Frequency of occurrence of the key t.
-    pub fn frequency(&self, t: &T) -> i64 {
+    pub fn frequency(&self, t: &T) -> u64 {
         match self.0.get(t) {
             Some(s) => s.f,
             None => 0,
@@ -82,8 +82,8 @@ where
     m
 }
 
-pub fn with_frequencies<T: Token>(fs: HashMap<T, i64>) -> Model<T> {
-    let total = fs.values().sum::<i64>() as f64;
+pub fn with_frequencies<T: Token>(fs: HashMap<T, u64>) -> Model<T> {
+    let total = fs.values().sum::<u64>() as f64;
     let mut m = Model::<T>(HashMap::new());
     for (t, f) in fs.into_iter() {
         m.0.insert(
