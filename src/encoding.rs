@@ -24,6 +24,7 @@ pub mod shannon;
 /// An `Encoding` maps `Token`s to `Letter`s.
 ///
 /// `Encoding`s are usually created by processing a `Model`.
+#[derive(Debug, Eq, PartialEq)]
 pub struct Encoding<T: Token> {
     map: HashMap<T, Letter>,
     alphabet: Alphabet,
@@ -70,4 +71,13 @@ impl<T: Token> Encoding<T> {
         }
         m
     }
+}
+
+/// Helper function to create a new `Encoding` from known mapping.
+///
+/// This is a private function useful for checking expected Encoding in
+/// unit tests.
+#[allow(dead_code)]
+fn from_pairs<T: Token>(data: &[(T, Letter)]) -> Result<Encoding<T>> {
+    Encoding::new(data.iter().cloned().collect())
 }

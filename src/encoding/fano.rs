@@ -459,7 +459,6 @@ mod tests {
     use crate::model;
     use crate::tokens::test_utils::I32Token;
     use crate::util::testing;
-    use std::collections::HashMap;
 
     #[test]
     fn single_level() {
@@ -468,13 +467,11 @@ mod tests {
         let m = model::with_frequencies(&[(I32Token(1), 4), (I32Token(2), 3)]);
         let t = new(m).unwrap();
         assert_eq!(t.alphabet().len(), 2);
-        let want: HashMap<I32Token, Letter> = [
+        let want = crate::encoding::from_pairs(&[
             (I32Token(1), Letter::new(&[0b1000_0000], 2)),
             (I32Token(2), Letter::new(&[0b1100_0000], 2)),
-        ]
-        .iter()
-        .cloned()
-        .collect();
-        assert_eq!(t.map(), &want);
+        ])
+        .unwrap();
+        assert_eq!(t, want);
     }
 }
