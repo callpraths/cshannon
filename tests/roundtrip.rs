@@ -71,42 +71,47 @@ fn roundtrip(text: &str, token: &str, encoding: &str) {
     assert_eq!(text, decompressed_text);
 }
 
-// Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
 fn bytes_balanced_tree() {
     roundtrip(TEXT, "byte", "balanced_tree");
 }
 
-// roundtrip is currently broken.
-// Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
 fn graphemes_balanced_tree() {
     roundtrip(TEXT, "grapheme", "balanced_tree");
 }
 
-// roundtrip is currently broken.
-// Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
 fn words_balanced_tree() {
     roundtrip(TEXT_ONLY_WORDS, "word", "balanced_tree");
 }
 
-// Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
 fn bytes_shannon() {
     roundtrip(TEXT, "byte", "shannon");
 }
 
-// roundtrip is currently broken.
-// Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
 fn graphemes_shannon() {
     roundtrip(TEXT, "grapheme", "shannon");
 }
 
-// roundtrip is currently broken.
-// Pushed a change for completeness, but needs follow up for fix(es).
 #[test]
 fn words_shannon() {
     roundtrip(TEXT_ONLY_WORDS, "word", "shannon");
+}
+
+#[test]
+fn bytes_fano() {
+    roundtrip(TEXT, "byte", "fano");
+}
+
+#[test]
+fn graphemes_fano() {
+    roundtrip(TEXT, "grapheme", "fano");
+}
+
+#[test]
+fn words_fano() {
+    roundtrip(TEXT_ONLY_WORDS, "word", "fano");
 }

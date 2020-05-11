@@ -24,7 +24,7 @@ mod util;
 
 use code::Letter;
 use encoding::Encoding;
-use encoding::{balanced_tree, shannon};
+use encoding::{balanced_tree, fano, shannon};
 use model::Model;
 use tokens::bytes::{Byte, ByteIter, BytePacker};
 use tokens::graphemes::{Grapheme, GraphemeIter, GraphemePacker};
@@ -90,6 +90,7 @@ fn encoder<T: Token>(encoding: &str) -> Result<Encoder<T>> {
     match encoding {
         "balanced_tree" => Ok(balanced_tree::new::<T>),
         "shannon" => Ok(shannon::new::<T>),
+        "fano" => Ok(fano::new::<T>),
         _ => Err(anyhow!("invalid encoding {}", encoding)),
     }
 }
