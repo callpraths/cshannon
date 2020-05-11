@@ -84,15 +84,8 @@ impl<'a, T: Token> Window<'a, T> {
             1 => Refinement::Terminal(self.0[0].0.clone()),
             _ => {
                 let mid_value = self.0[self.0.len() - 1].1 / 2.0;
-                // TODO rename methods.
                 let split = self.find_split_binary_search(mid_value);
-                let left_diff = mid_value - self.0[split - 1].1;
-                let right_diff = self.0[split].1 - mid_value;
-                if right_diff < left_diff {
-                    self.split_at(split + 1)
-                } else {
-                    self.split_at(split)
-                }
+                self.split_at(split)
             }
         };
         trace!("  --> {}", &ret);
@@ -101,8 +94,7 @@ impl<'a, T: Token> Window<'a, T> {
 
     fn find_split_binary_search(&self, mid_value: f64) -> usize {
         assert!(self.0.len() > 1);
-        // The left split must be non-empty, even if the mid_value is smaller.
-        let mut left: usize = 1;
+        let mut left: usize = 0;
         let mut right = self.0.len();
         while right - left > LINEAR_SEARCH_THRESHOLD {
             let mid = (left + right) / 2;
@@ -116,11 +108,14 @@ impl<'a, T: Token> Window<'a, T> {
     }
 
     fn find_split_linear(&self, mid_value: f64, left: usize, right: usize) -> usize {
-        assert!(self.0.len() > 1);
-        for i in left..right {
-            if self.0[i].1 > mid_value {
+        assert!(right - left > 1);
+        let mut diff = (self.0[left].1 - mid_value).abs();
+        for i in left + 1..right {
+            let ndiff = (self.0[i].1 - mid_value).abs();
+            if ndiff > diff {
                 return i;
             }
+            diff = ndiff;
         }
         right
     }
