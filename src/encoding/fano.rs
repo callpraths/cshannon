@@ -83,8 +83,16 @@ impl<'a, T: Token> Window<'a, T> {
             0 => panic!("Window must be at least length 1"),
             1 => Refinement::Terminal(self.0[0].0.clone()),
             _ => {
-                let split = self.find_split_binary_search(self.0[self.0.len() - 1].1 / 2.0);
-                self.split_at(split)
+                let mid_value = self.0[self.0.len() - 1].1 / 2.0;
+                // TODO rename methods.
+                let split = self.find_split_binary_search(mid_value);
+                let left_diff = mid_value - self.0[split - 1].1;
+                let right_diff = self.0[split].1 - mid_value;
+                if right_diff < left_diff {
+                    self.split_at(split + 1)
+                } else {
+                    self.split_at(split)
+                }
             }
         };
         trace!("  --> {}", &ret);
@@ -287,9 +295,25 @@ mod refinement_tests {
 
     #[test]
     fn three_elems_larger_right() {
-        let mut data = vec![(I32Token(1), 0.3), (I32Token(2), 0.6), (I32Token(3), 1.0)];
-        let mut left = vec![(I32Token(1), 0.3)];
-        let mut right = vec![(I32Token(2), 0.6), (I32Token(3), 1.0)];
+        let mut data = vec![(I32Token(1), 0.4), (I32Token(2), 0.7), (I32Token(3), 1.0)];
+        let mut left = vec![(I32Token(1), 0.4)];
+        let mut right = vec![(I32Token(2), 0.7), (I32Token(3), 1.0)];
+        assert_eq!(
+            Window::new(&mut data).refine(),
+            Refinement::Split(Window::new(&mut left), Window::new(&mut right))
+        );
+    }
+
+    #[test]
+    fn four_elems_closer_right() {
+        let mut data = vec![
+            (I32Token(1), 0.31),
+            (I32Token(2), 0.60),
+            (I32Token(3), 0.85),
+            (I32Token(4), 1.0),
+        ];
+        let mut left = vec![(I32Token(1), 0.31), (I32Token(2), 0.60)];
+        let mut right = vec![(I32Token(3), 0.85), (I32Token(4), 1.0)];
         assert_eq!(
             Window::new(&mut data).refine(),
             Refinement::Split(Window::new(&mut left), Window::new(&mut right))
@@ -470,6 +494,28 @@ mod tests {
         let want = crate::encoding::from_pairs(&[
             (I32Token(1), Letter::new(&[0b1000_0000], 2)),
             (I32Token(2), Letter::new(&[0b1100_0000], 2)),
+        ])
+        .unwrap();
+        assert_eq!(t, want);
+    }
+
+    #[test]
+    fn two_level_balanced() {
+        testing::init_logs_for_test();
+
+        let m = model::with_frequencies(&[
+            (I32Token(1), 31),
+            (I32Token(2), 29),
+            (I32Token(3), 25),
+            (I32Token(4), 15),
+        ]);
+        let t = new(m).unwrap();
+        assert_eq!(t.alphabet().len(), 4);
+        let want = crate::encoding::from_pairs(&[
+            (I32Token(1), Letter::new(&[0b1000_0000], 3)),
+            (I32Token(2), Letter::new(&[0b1010_0000], 3)),
+            (I32Token(3), Letter::new(&[0b1100_0000], 3)),
+            (I32Token(4), Letter::new(&[0b1110_0000], 3)),
         ])
         .unwrap();
         assert_eq!(t, want);
