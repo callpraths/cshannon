@@ -82,7 +82,8 @@ where
     m
 }
 
-pub fn with_frequencies<T: Token>(fs: HashMap<T, u64>) -> Model<T> {
+pub fn with_frequencies<T: Token>(fs: &[(T, u64)]) -> Model<T> {
+    let fs: HashMap<T, u64> = fs.to_vec().into_iter().collect();
     let total = fs.values().sum::<u64>() as f64;
     let mut m = Model::<T>(HashMap::new());
     for (t, f) in fs.into_iter() {
@@ -124,18 +125,13 @@ mod tests {
 
     #[test]
     fn with_frequencies() {
-        let m = super::with_frequencies(
-            [
-                (I32Token(2), 2),
-                (I32Token(3), 1),
-                (I32Token(1), 1),
-                (I32Token(5), 1),
-                (I32Token(11), 1),
-            ]
-            .iter()
-            .cloned()
-            .collect(),
-        );
+        let m = super::with_frequencies(&[
+            (I32Token(2), 2),
+            (I32Token(3), 1),
+            (I32Token(1), 1),
+            (I32Token(5), 1),
+            (I32Token(11), 1),
+        ]);
         assert_eq!(m.frequency(&I32Token(1)), 1);
         assert_eq!(m.frequency(&I32Token(2)), 2);
         assert_eq!(m.frequency(&I32Token(13)), 0);

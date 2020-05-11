@@ -465,12 +465,7 @@ mod tests {
     fn single_level() {
         testing::init_logs_for_test();
 
-        let m = model::with_frequencies(
-            [(I32Token(1), 4), (I32Token(2), 3)]
-                .iter()
-                .cloned()
-                .collect(),
-        );
+        let m = model::with_frequencies(&[(I32Token(1), 4), (I32Token(2), 3)]);
         let t = new(m).unwrap();
         assert_eq!(t.alphabet().len(), 2);
         let want: HashMap<I32Token, Letter> = [

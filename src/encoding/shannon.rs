@@ -138,17 +138,12 @@ mod tests {
         // c: 0.0, 0.4, 0.7, 0.9
         // e: 00, 01, 101, 1110
         // e[corrected for all 0s]: 001, 01, 101, 1110
-        let m = model::with_frequencies(
-            [
-                (I32Token(1), 4),
-                (I32Token(2), 3),
-                (I32Token(3), 2),
-                (I32Token(4), 1),
-            ]
-            .iter()
-            .cloned()
-            .collect(),
-        );
+        let m = model::with_frequencies(&[
+            (I32Token(1), 4),
+            (I32Token(2), 3),
+            (I32Token(3), 2),
+            (I32Token(4), 1),
+        ]);
         let t = new(m).unwrap();
         assert_eq!(t.alphabet().len(), 4);
         let want: HashMap<I32Token, Letter> = [

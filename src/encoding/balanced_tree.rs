@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn empty() {
-        let m: Model<I32Token> = model::with_frequencies(HashMap::new());
+        let m: Model<I32Token> = model::with_frequencies(&[]);
         let t = new(m).unwrap();
         assert!(t.alphabet().is_empty());
         assert!(t.map().is_empty());
@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn one_token() {
-        let m = model::with_frequencies([(I32Token(1), 2)].iter().cloned().collect());
+        let m = model::with_frequencies(&[(I32Token(1), 2)]);
         let t = new(m).unwrap();
         assert_eq!(t.alphabet().len(), 1);
         let want: HashMap<I32Token, Letter> = [(I32Token(1), Letter::new(&[0b1000_0000], 1))]
@@ -121,12 +121,7 @@ mod tests {
 
     #[test]
     fn max_tokens_for_some_tree_height() {
-        let m = model::with_frequencies(
-            [(I32Token(1), 1), (I32Token(2), 2), (I32Token(3), 3)]
-                .iter()
-                .cloned()
-                .collect(),
-        );
+        let m = model::with_frequencies(&[(I32Token(1), 1), (I32Token(2), 2), (I32Token(3), 3)]);
         let t = new(m).unwrap();
         assert_eq!(t.alphabet().len(), 3);
         let want: HashMap<I32Token, Letter> = [
@@ -142,17 +137,12 @@ mod tests {
 
     #[test]
     fn max_tokens_for_some_tree_height_then_one() {
-        let m = model::with_frequencies(
-            [
-                (I32Token(1), 1),
-                (I32Token(2), 2),
-                (I32Token(3), 3),
-                (I32Token(4), 4),
-            ]
-            .iter()
-            .cloned()
-            .collect(),
-        );
+        let m = model::with_frequencies(&[
+            (I32Token(1), 1),
+            (I32Token(2), 2),
+            (I32Token(3), 3),
+            (I32Token(4), 4),
+        ]);
         let t = new(m).unwrap();
         assert_eq!(t.alphabet().len(), 4);
         let want: HashMap<I32Token, Letter> = [
