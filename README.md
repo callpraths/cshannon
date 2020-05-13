@@ -11,7 +11,6 @@ reasonable, and readability is prioritized over efficiency.
 
 ### Implemenation
 
-* Implement Fano encoding scheme
 * Implement Huffman encoding scheme
 
 ### Hygiene
@@ -22,7 +21,7 @@ reasonable, and readability is prioritized over efficiency.
 
 * Get help from rust-users etc to make the `Tokens` trait cleaner.
 * micro-benchmarks: Write some, make it faster!
-* fuzz testing: Write some, find bugs!
+* fuzz testing: find & fix bugs!
 
 ### Blog
 
@@ -33,10 +32,6 @@ reasonable, and readability is prioritized over efficiency.
 
 ### Refactors
 
-* Accept vector of pairs in `model::with_frequencies()`  to reduce boilerplate
-  at call sites.
-* Accept vector of pairs to create `Encoding` in tests and implement `Eq` to
-  reduce assertion boilerplate in tests.
 * Deduplicate cumulative probability computation in `model::balanced_tree` vs
   `model::fano`
 * Make `model::fano::Window` more readable by replacing tuple with struct.

@@ -25,3 +25,11 @@ members = ["."]
 [[bin]]
 name = "balanced_tree"
 path = "fuzz_targets/balanced_tree.rs"
+
+[[bin]]
+name = "shannon"
+path = "fuzz_targets/shannon.rs"
+
+[[bin]]
+name = "fano"
+path = "fuzz_targets/fano.rs"

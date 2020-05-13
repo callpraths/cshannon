@@ -19,5 +19,5 @@ use libfuzzer_sys::fuzz_target;
 mod util;
 
 fuzz_target!(|data: &[u8]| {
-    util::fuzz("byte", "balanced_tree", data);
+    util::fuzz("byte", "fano", data);
 });
