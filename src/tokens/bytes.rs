@@ -38,7 +38,7 @@ pub fn new(v: u8) -> Byte {
 
 impl std::fmt::Display for Byte {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
+        write!(f, "{:#04x}", &self.0)
     }
 }
 
