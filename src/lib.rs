@@ -32,55 +32,58 @@ use tokens::words::{Word, WordIter, WordPacker};
 use tokens::{Token, TokenIter, TokenPacker};
 
 use anyhow::{anyhow, Result};
-use env_logger::Env;
 use log::{info, trace};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Seek;
 use std::io::{BufReader, BufWriter, Cursor};
 
-pub fn run(args: clap::ArgMatches) -> Result<()> {
-    env_logger::from_env(Env::default().default_filter_or("warn")).init();
+pub struct Args<'a> {
+    pub command: &'a str,
+    pub input_file: &'a str,
+    pub output_file: &'a str,
+    pub encoding: &'a str,
+    pub tokenizer: &'a str,
+}
 
-    // Safe to use unwrap() because these args are `required`.
-    let encoding = args.value_of("encoding").unwrap();
-    let input_file = args.value_of("input_file").unwrap();
-    let output_file = args.value_of("output_file").unwrap();
-    let tokenizer_choice = args.value_of("tokenizer").unwrap();
-    match args.subcommand_name() {
-        Some("compress") => match tokenizer_choice {
+pub fn run(args: Args) -> Result<()> {
+    match args.command {
+        "compress" => match args.tokenizer {
             "byte" => compress::<Byte, ByteIter<BufReader<File>>, BytePacker>(
-                &input_file,
-                &output_file,
-                encoder(encoding)?,
+                args.input_file,
+                args.output_file,
+                encoder(args.encoding)?,
             ),
             "grapheme" => compress::<Grapheme, GraphemeIter, GraphemePacker>(
-                &input_file,
-                &output_file,
-                encoder(encoding)?,
+                args.input_file,
+                args.output_file,
+                encoder(args.encoding)?,
             ),
             "word" => compress::<Word, WordIter, WordPacker>(
-                &input_file,
-                &output_file,
-                encoder(encoding)?,
+                args.input_file,
+                args.output_file,
+                encoder(args.encoding)?,
             ),
-            _ => Err(anyhow!("invalid tokenizer {}", tokenizer_choice)),
+            _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
         },
-        Some("decompress") => match tokenizer_choice {
+        "decompress" => match args.tokenizer {
             "byte" => {
                 decompress::<Byte, ByteIter<BufReader<File>>, ByteIter<Cursor<Vec<u8>>>, BytePacker>(
-                    &input_file,
-                    &output_file,
+                    args.input_file,
+                    args.output_file,
                 )
             }
             "grapheme" => decompress::<Grapheme, GraphemeIter, GraphemeIter, GraphemePacker>(
-                &input_file,
-                &output_file,
+                args.input_file,
+                args.output_file,
             ),
-            "word" => decompress::<Word, WordIter, WordIter, WordPacker>(&input_file, &output_file),
-            _ => Err(anyhow!("invalid tokenizer {}", tokenizer_choice)),
+            "word" => decompress::<Word, WordIter, WordIter, WordPacker>(
+                args.input_file,
+                args.output_file,
+            ),
+            _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
         },
-        _ => Err(anyhow!("no sub-command selected")),
+        name => Err(anyhow!("unsupported command {}", name)),
     }
 }
 

@@ -1,0 +1,27 @@
+
+[package]
+name = "cshannon-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+anyhow = "1.0.28"
+env_logger = "0.7.1"
+libfuzzer-sys = "0.3"
+tempfile = "3.1.0"
+
+[dependencies.cshannon]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "balanced_tree"
+path = "fuzz_targets/balanced_tree.rs"

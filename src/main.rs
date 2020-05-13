@@ -17,10 +17,13 @@
 
 extern crate cshannon;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::{App, Arg, SubCommand};
+use env_logger::Env;
 
 fn main() -> Result<()> {
+    env_logger::from_env(Env::default().default_filter_or("warn")).init();
+
     let args = App::new("Shannon Coder-Decoder")
         .version("0.1.0")
         .author("Prathmesh Prabhu (callpraths@gmail.com")
@@ -78,7 +81,18 @@ Must be different from input file.",
         .subcommand(SubCommand::with_name("decompress").about("Decompress a file"))
         .get_matches();
 
-    cshannon::run(args)?;
+    let subcommand_name = match args.subcommand_name() {
+        Some(n) => n,
+        _ => Err(anyhow!("no sub-command selected"))?,
+    };
+    // Safe to use unwrap() because these args are `required`.
+    cshannon::run(cshannon::Args {
+        command: subcommand_name,
+        input_file: args.value_of("input_file").unwrap(),
+        output_file: args.value_of("output_file").unwrap(),
+        tokenizer: args.value_of("tokenizer").unwrap(),
+        encoding: args.value_of("encoding").unwrap(),
+    })?;
     println!("Success");
     Ok(())
 }
