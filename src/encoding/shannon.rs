@@ -76,7 +76,7 @@ fn e(c: f64, l: u64) -> Letter {
     let mut mut_c = c;
     for _ in 0..l {
         mut_c *= 2.0;
-        if mut_c > 1.0 {
+        if mut_c >= 1.0 {
             letter.push1();
             mut_c -= 1.0;
         } else {
@@ -160,5 +160,38 @@ mod tests {
         .cloned()
         .collect();
         assert_eq!(t.map(), &want);
+    }
+
+    /// A case where the cumulative frequency is a diadic_fraction that leads to
+    /// a terminative decimal expansion within the desired number of bits.
+    ///
+    /// TODO: Make the token sorting order stable when frequencies match and
+    /// simplify this test.
+    #[test]
+    fn short_diadic_fraction() {
+        testing::init_logs_for_test();
+        // f: 0.5, 0.5
+        // l: 1, 1
+        // c: 0.0, 0.5
+        // e: 0, 1
+        // e[corrected for all 0s]: 01, 1
+        let m = model::with_frequencies(&[(I32Token(1), 1), (I32Token(2), 1)]);
+        let t = new(m).unwrap();
+        assert_eq!(t.alphabet().len(), 2);
+        let want: HashMap<I32Token, Letter> = [
+            (I32Token(2), Letter::new(&[0b0100_0000], 2)),
+            (I32Token(1), Letter::new(&[0b1000_0000], 1)),
+        ]
+        .iter()
+        .cloned()
+        .collect();
+        let want_alt: HashMap<I32Token, Letter> = [
+            (I32Token(1), Letter::new(&[0b0100_0000], 2)),
+            (I32Token(2), Letter::new(&[0b1000_0000], 1)),
+        ]
+        .iter()
+        .cloned()
+        .collect();
+        assert!(t.map() == &want || t.map() == &want_alt);
     }
 }
