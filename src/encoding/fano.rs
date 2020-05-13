@@ -18,11 +18,15 @@ use crate::model::Model;
 use crate::tokens::Token;
 use anyhow::Result;
 use log::trace;
+use std::collections::HashMap;
 
 pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
 where
     T: Token,
 {
+    if m.is_empty() {
+        return Encoding::new(HashMap::new());
+    }
     let flattened: Vec<(T, f64)> = m
         .tokens_sorted()
         .iter()

@@ -41,6 +41,10 @@ pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
 where
     T: Token,
 {
+    if m.is_empty() {
+        return Encoding::new(HashMap::new());
+    }
+
     let tk = m.tokens_sorted();
     let fk = tk.iter().map(|t| m.probability(t));
     let lk = fk.map(l);
