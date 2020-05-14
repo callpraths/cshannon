@@ -33,3 +33,7 @@ path = "fuzz_targets/shannon.rs"
 [[bin]]
 name = "fano"
 path = "fuzz_targets/fano.rs"
+
+[[bin]]
+name = "grapheme"
+path = "fuzz_targets/grapheme.rs"

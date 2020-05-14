@@ -15,6 +15,7 @@
 use crate::code::{Alphabet, Letter};
 use crate::tokens::Token;
 use anyhow::Result;
+use log::{debug, log_enabled, Level};
 use std::collections::HashMap;
 
 pub mod balanced_tree;
@@ -61,6 +62,7 @@ impl<T: Token> Encoding<T> {
         let mut letters: Vec<&Letter> = map.values().collect();
         letters.sort();
         let alphabet = Alphabet::new(letters.into_iter().cloned().collect())?;
+        log_encoder_ring(&map);
         Ok(Self { map, alphabet })
     }
 
@@ -80,4 +82,14 @@ impl<T: Token> Encoding<T> {
 #[allow(dead_code)]
 fn from_pairs<T: Token>(data: &[(T, Letter)]) -> Result<Encoding<T>> {
     Encoding::new(data.iter().cloned().collect())
+}
+
+fn log_encoder_ring<T: Token>(m: &HashMap<T, Letter>) {
+    if !log_enabled!(Level::Debug) {
+        return;
+    }
+    debug!("Encoder ring:");
+    for (t, l) in m.iter() {
+        debug!("  |{}|: |{}|", t, l);
+    }
 }

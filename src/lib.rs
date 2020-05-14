@@ -32,7 +32,7 @@ use tokens::words::{Word, WordIter, WordPacker};
 use tokens::{Token, TokenIter, TokenPacker};
 
 use anyhow::{anyhow, Result};
-use log::{info, trace};
+use log::{debug, info, log_enabled, trace, Level};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Seek;
@@ -150,12 +150,21 @@ where
         "File position after unpacking alphabet set: {:?}",
         br.stream_position()
     );
-    let map = alphabet
-        .letters()
+    let letters = alphabet.letters();
+
+    if letters.len() != tokens.len() {
+        return Err(anyhow!(
+            "Extracted letter count {} does not match token count {}",
+            letters.len(),
+            tokens.len(),
+        ));
+    }
+    let map = letters
         .iter()
         .cloned()
         .zip(tokens.into_iter())
         .collect::<HashMap<Letter, T>>();
+    log_decoder_ring(&map);
 
     let coded_text = crate::code::parse(&alphabet, br)?.map(|r| r.unwrap());
     let tokens = crate::coder::decode(&map, coded_text).map(|r| r.unwrap());
@@ -163,4 +172,14 @@ where
     let mut w = BufWriter::new(File::create(output_file)?);
     TPacker::pack(tokens, &mut w)?;
     Ok(())
+}
+
+fn log_decoder_ring<T: Token>(m: &HashMap<Letter, T>) {
+    if !log_enabled!(Level::Debug) {
+        return;
+    }
+    debug!("Decoder ring:");
+    for (l, t) in m.iter() {
+        debug!("  |{}|: |{}|", l, t);
+    }
 }
