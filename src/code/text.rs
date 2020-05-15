@@ -354,33 +354,32 @@ mod parse_tests {
 
     #[test]
     fn single_byte_disjoint() {
-        let l0 = Letter::from_bytes(&[0x00]);
         let l1 = Letter::from_bytes(&[0x11]);
         let l2 = Letter::from_bytes(&[0x22]);
         let l3 = Letter::from_bytes(&[0x33]);
 
-        let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]).unwrap();
-        let t: Vec<u8> = vec![0x00, 0x22, 0x33, 0x22, 0x33, 0x00];
+        let a = Alphabet::new(vec![l1.clone(), l2.clone(), l3.clone()]).unwrap();
+        let t: Vec<u8> = vec![0x22, 0x33, 0x22, 0x33];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         let c = r.unwrap();
-        assert_eq!(c, vec![&l0, &l2, &l3, &l2, &l3, &l0]);
+        assert_eq!(c, vec![&l2, &l3, &l2, &l3]);
     }
 
     #[test]
     fn single_byte_common_prefix() {
-        let l0 = Letter::from_bytes(&[0b0000_0000]);
+        let l0 = Letter::from_bytes(&[0b0000_0100]);
         let l1 = Letter::from_bytes(&[0b0000_0010]);
         let l2 = Letter::from_bytes(&[0b0010_1111]);
         let l3 = Letter::from_bytes(&[0b0011_0000]);
 
         let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]).unwrap();
         let t: Vec<u8> = vec![
-            0b0000_0000,
+            0b0000_0100,
             0b0010_1111,
             0b0011_0000,
             0b0010_1111,
             0b0011_0000,
-            0b0000_0000,
+            0b0000_0100,
         ];
         let r: Result<Vec<&Letter>> = parse(&a, Cursor::new(t)).unwrap().collect();
         let c = r.unwrap();

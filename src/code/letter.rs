@@ -156,9 +156,10 @@ pub trait Peephole {
 impl Peephole for Letter {
     fn validate(&self) -> Result<()> {
         if self.all_zeroes() {
-            anyhow!("letter {} is all 0s", self);
+            Err(anyhow!("letter {} is all 0s", self))
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     fn data<'a>(&'a self) -> &'a Vec<u8> {

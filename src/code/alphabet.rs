@@ -242,15 +242,6 @@ mod pack_tests {
     }
 
     #[test]
-    fn roundtrip_single_letter_zeroes() {
-        let v = vec![Letter::from_bytes(&[0])];
-        let a = Alphabet::new(v.clone()).unwrap();
-        let mut packed = Vec::<u8>::new();
-        assert!(a.pack(&mut packed).is_ok());
-        let got = Alphabet::unpack(Cursor::new(packed)).unwrap();
-        assert_eq!(got.0, v);
-    }
-    #[test]
     fn roundtrip_byte_letters() {
         let v = vec![
             Letter::from_bytes(&[0b10000001]),
@@ -344,17 +335,17 @@ mod tree_tests {
     }
 
     #[test]
-    fn leaf0() {
-        let l = Letter::new(&[0b0], 1);
-        let a = Alphabet::new(vec![l.clone()]).unwrap();
-        assert_eq!(a.tree().unwrap(), Node::new0(Node::newl(&l)),);
-    }
-
-    #[test]
     fn leaf1() {
         let l = Letter::new(&[0b1000_0000], 1);
         let a = Alphabet::new(vec![l.clone()]).unwrap();
         assert_eq!(a.tree().unwrap(), Node::new1(Node::newl(&l)));
+    }
+
+    #[test]
+    fn leaf0() {
+        let l = Letter::new(&[0b1000_0000], 2);
+        let a = Alphabet::new(vec![l.clone()]).unwrap();
+        assert_eq!(a.tree().unwrap(), Node::new1(Node::new0(Node::newl(&l))),);
     }
 
     #[test]
@@ -371,12 +362,12 @@ mod tree_tests {
 
     #[test]
     fn unshared_letters() {
-        let l0 = Letter::new(&[0b0], 1);
+        let l0 = Letter::new(&[0b0100_0000], 2);
         let l1 = Letter::new(&[0b1000_0000], 1);
         let a = Alphabet::new(vec![l0.clone(), l1.clone()]).unwrap();
         assert_eq!(
             a.tree().unwrap(),
-            Node::new(Node::newl(&l0), Node::newl(&l1)),
+            Node::new(Node::new1(Node::newl(&l0)), Node::newl(&l1)),
         )
     }
 
@@ -399,12 +390,12 @@ mod tree_tests {
         let l0 = Letter::new(&[0b1000_0000, 0b1100_0000], 10);
         let l1 = Letter::new(&[0b1000_0000, 0b0000_0000], 10);
         let l2 = Letter::new(&[0b1010_0000], 3);
-        let l3 = Letter::new(&[0b0000_0000], 3);
+        let l3 = Letter::new(&[0b0010_0000], 3);
         let a = Alphabet::new(vec![l0.clone(), l1.clone(), l2.clone(), l3.clone()]).unwrap();
         assert_eq!(
             a.tree().unwrap(),
             Node::new(
-                Node::new0(Node::new0(Node::newl(&l3))),
+                Node::new0(Node::new1(Node::newl(&l3))),
                 Node::new0(Node::new(
                     Node::new0(Node::new0(Node::new0(Node::new0(Node::new0(Node::new(
                         Node::new0(Node::newl(&l1)),
