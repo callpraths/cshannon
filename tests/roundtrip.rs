@@ -115,3 +115,18 @@ fn graphemes_fano() {
 fn words_fano() {
     roundtrip(TEXT_ONLY_WORDS, "word", "fano");
 }
+
+#[test]
+fn bytes_huffman() {
+    roundtrip(TEXT, "byte", "huffman");
+}
+
+#[test]
+fn graphemes_huffman() {
+    roundtrip(TEXT, "grapheme", "huffman");
+}
+
+#[test]
+fn words_huffman() {
+    roundtrip(TEXT_ONLY_WORDS, "word", "huffman");
+}
