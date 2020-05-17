@@ -1,4 +1,22 @@
 language: rust
 rust:
-  - nightly
+- nightly
 cache: cargo
+services: docker
+env:
+  global:
+    # encrypted FUZZIT_API_KEY token.
+    # Generated with:
+    #   travis encrypt --add -r callpraths/cshannon FUZZIT_API_KEY=XXXX
+    secure: KUwRyiRqoZ4aXNah2yFKOSWSxVeB7DWgo8U4/dAf0I1M5JAGVdVL1WHAoOPszbxR93ux6yw+aAxcaFH2EUOj0kY7UNN7kElm75pGI2e4j4QCtYlm+Didb3ik2JC4GW1CchnFaqij0QD78mn/sZyvJE7YYY54QoZDSomxcWqBR1eQmbl0AwhElAURmqM4jz9/NCWrmyNFQIbRJu9slCLul2W7VW2KWX1rDEURZrwkF6SVZ67ZDtmPU6SodlLEr04qX0Ll5mDwcAhBmIKdzFOUyvMqIxX/hlDBxkJabHtKRHvcsadi/m7LL7Hcrfjpb9EyR0CyuT/ffH/D3SUwsRqZ0DxrlxpmRrVLxoEfd6aK6iOOs+lhT9Lrin5zgN6EzTPRBV0H7s1Hv6Yfm1HrqBCrRDXi+LeAOkhoQsYyPrIEyXrN6JzrZriqDja4qrYL2ja94ySM8pJwdxMIhZlVeScLIry5J0jV4vgslqVLfcfI2Rs1apclijXszx+w0Z6dJgH/UNrr5fMJO7KIok9KDbo41SOqflTs8Qfbp9tf61B6/hl2gwoJ8uYuiK+EStZCRYt9VeRrMWa3LC9kixtMe1I5JCc/xAONrs3p/bRKAdTWc75Ub5sXJ0XEsK5naO9YQQyM6GrmPx88lheK8owBxsLdYJ8c26IXZgv6+JhUEsNdtrs=
+jobs:
+  - stage: Post-submit tests
+    if: branch = master AND type IN (push)
+    script:
+      - cargo test --verbose --all
+  - stage: Post-submit fuzz
+    if: branch = master AND type IN (push)
+    go: 1.12.x
+    script:
+      - cargo install cargo-fuzz
+      - ./ci/fuzzit.sh fuzzing

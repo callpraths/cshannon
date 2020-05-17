@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.com/callpraths/cshannon.svg?branch=master)](https://travis-ci.com/github/callpraths/cshannon)
+[![fuzzit](https://app.fuzzit.dev/badge?org_id=callpraths-gh)](https://app.fuzzit.dev/orgs/callpraths-gh/dashboard)
 
 # cshannon
 
@@ -9,9 +10,8 @@ reasonable, and readability is prioritized over efficiency.
 
 ## TODO
 
-### Implemenation
+### Implementation
 
-* Implement Huffman encoding scheme
 
 ### Hygiene
 
@@ -21,7 +21,6 @@ reasonable, and readability is prioritized over efficiency.
 
 * Get help from rust-users etc to make the `Tokens` trait cleaner.
 * micro-benchmarks: Write some, make it faster!
-* fuzz testing: find & fix bugs!
 
 ### Blog
 

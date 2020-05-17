@@ -41,3 +41,7 @@ path = "fuzz_targets/grapheme.rs"
 [[bin]]
 name = "huffman"
 path = "fuzz_targets/huffman.rs"
+
+[[bin]]
+name = "all"
+path = "fuzz_targets/all.rs"
