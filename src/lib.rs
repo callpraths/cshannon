@@ -194,6 +194,7 @@ mod benchmarks {
     extern crate test;
 
     use super::{run, Args};
+    use crate::util::testing;
     use anyhow::Result;
     use std::fs;
     use std::sync::Once;
@@ -227,7 +228,7 @@ About my neck was hung.
     }
 
     fn roundtrip(tokenizer: &str, encoding: &str, data: &str) {
-        init_logs_for_test();
+        testing::init_logs_for_test();
         let work_dir = tempfile::tempdir().unwrap();
         let input_file = work_dir.path().join("input.txt");
         let compressed_file = work_dir.path().join("compressed.txt");
@@ -258,11 +259,5 @@ About my neck was hung.
             format!("Backtrace: {}", e.backtrace());
             panic!("Error: {}", e);
         }
-    }
-
-    static LOG_INIT: Once = Once::new();
-
-    fn init_logs_for_test() {
-        LOG_INIT.call_once(|| env_logger::init());
     }
 }
