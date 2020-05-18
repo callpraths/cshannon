@@ -14,9 +14,3 @@ jobs:
     if: branch = master AND type IN (push)
     script:
       - cargo test --verbose --all
-  - stage: Post-submit fuzz
-    if: branch = master AND type IN (push)
-    go: 1.12.x
-    script:
-      - cargo install cargo-fuzz
-      - ./ci/fuzzit.sh fuzzing
