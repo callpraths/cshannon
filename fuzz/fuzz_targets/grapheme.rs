@@ -22,6 +22,6 @@ fuzz_target!(|data: &[u8]| {
     if let Ok(_) = std::str::from_utf8(data) {
         // Intent is to check tokens that are not fixed width so we use the simplest
         // encoding.
-        util::fuzz("grapheme", "balanced_tree", data);
+        util::roundtrip("grapheme", "balanced_tree", data);
     }
 });

@@ -18,7 +18,7 @@ use std::fs;
 use std::sync::Once;
 use tempfile;
 
-pub fn fuzz(tokenizer: &str, encoding: &str, data: &[u8]) {
+pub fn roundtrip(tokenizer: &str, encoding: &str, data: &[u8]) {
     init_logs_for_test();
     let work_dir = tempfile::tempdir().unwrap();
     let input_file = work_dir.path().join("input.txt");

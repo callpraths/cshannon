@@ -14,6 +14,7 @@
 
 #![feature(associated_type_bounds)]
 #![feature(seek_convenience)]
+#![feature(test)]
 
 pub mod code;
 pub mod coder;
@@ -182,5 +183,86 @@ fn log_decoder_ring<T: Token>(m: &HashMap<Letter, T>) {
     debug!("Decoder ring:");
     for (l, t) in m.iter() {
         debug!("  |{}|: |{}|", l, t);
+    }
+}
+
+mod benchmarks {
+    // Benchmarks don't get detected as uses correctly.
+    #![allow(dead_code)]
+    #![allow(unused_imports)]
+
+    extern crate test;
+
+    use super::{run, Args};
+    use anyhow::Result;
+    use std::fs;
+    use std::sync::Once;
+    use test::Bencher;
+
+    const TEXT: &str = "
+Ah! well a-day! what evil looks
+Had I from old and young!
+Instead of the cross, the Albatross
+About my neck was hung.
+";
+
+    #[bench]
+    fn bytes_balanced_tree(b: &mut Bencher) {
+        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+    }
+
+    #[bench]
+    fn bytes_shannon(b: &mut Bencher) {
+        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+    }
+
+    #[bench]
+    fn bytes_fano(b: &mut Bencher) {
+        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+    }
+
+    #[bench]
+    fn bytes_huffman(b: &mut Bencher) {
+        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+    }
+
+    fn roundtrip(tokenizer: &str, encoding: &str, data: &str) {
+        init_logs_for_test();
+        let work_dir = tempfile::tempdir().unwrap();
+        let input_file = work_dir.path().join("input.txt");
+        let compressed_file = work_dir.path().join("compressed.txt");
+        let decompressed_file = work_dir.path().join("decompressed.txt");
+
+        fs::write(&input_file, data).unwrap();
+        print_error_and_bail(run(Args {
+            command: "compress",
+            input_file: input_file.to_str().unwrap(),
+            output_file: compressed_file.to_str().unwrap(),
+            tokenizer: tokenizer,
+            encoding: encoding,
+        }));
+        print_error_and_bail(run(Args {
+            command: "decompress",
+            input_file: compressed_file.to_str().unwrap(),
+            output_file: decompressed_file.to_str().unwrap(),
+            tokenizer: tokenizer,
+            encoding: encoding,
+        }));
+        let decompressed = fs::read(&decompressed_file).unwrap();
+        assert_eq!(data.as_bytes(), &decompressed[..]);
+    }
+
+    fn print_error_and_bail<T>(r: Result<T>) {
+        if let Err(e) = r {
+            format!("Error: {}", e);
+            format!("Backtrace: {}", e.backtrace());
+            panic!("Error: {}", e);
+        }
+    }
+
+    static LOG_INIT: Once = Once::new();
+
+    fn init_logs_for_test() {
+        LOG_INIT.call_once(|| env_logger::init());
     }
 }

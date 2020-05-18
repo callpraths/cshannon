@@ -19,9 +19,9 @@ use libfuzzer_sys::fuzz_target;
 mod util;
 
 fuzz_target!(|data: &[u8]| {
-    util::fuzz("byte", "balanced_tree", data);
-    util::fuzz("byte", "fano", data);
-    util::fuzz("byte", "shannon", data);
-    util::fuzz("byte", "huffman", data);
+    util::roundtrip("byte", "balanced_tree", data);
+    util::roundtrip("byte", "fano", data);
+    util::roundtrip("byte", "shannon", data);
+    util::roundtrip("byte", "huffman", data);
     // TODO: Stabilize and add fuzz target for grapheme.
 });
