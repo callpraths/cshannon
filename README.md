@@ -10,17 +10,9 @@ reasonable, and readability is prioritized over efficiency.
 
 ## TODO
 
-### Implementation
-
-
-### Hygiene
-
-* Create crate and releases.
-
 ### Learn
 
-* Get help from rust-users etc to make the `Tokens` trait cleaner.
-* micro-benchmarks: Write some, make it faster!
+* Profile and compare various implementations.
 
 ### Blog
 
@@ -28,9 +20,3 @@ reasonable, and readability is prioritized over efficiency.
 * Concretize ideas for data viz blog post comparing Fano, Shannon and Huffman
   encodings
   * [extra credit] WASM compilation of cshannon to allow users to input text.
-
-### Refactors
-
-* Deduplicate cumulative probability computation in `model::balanced_tree` vs
-  `model::fano`
-* Make `model::fano::Window` more readable by replacing tuple with struct.
