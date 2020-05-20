@@ -15,10 +15,15 @@
 [package]
 name = "cshannon"
 version = "0.1.0"
-authors = ["Prathmesh Prabhu <callprpaths@gmail.com>"]
+authors = ["Prathmesh Prabhu <callpraths@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "An implementation of compression algorithms leading up to Huffman's encoding"
+documentation = "https://docs.rs/cshannon"
+readme = "README.md"
+repository = "https://github.com/callpraths/cshannon"
+license-file = "LICENSE"
+keywords = ["compression", "decompression", "shannon", "fano"]
+categories = ["compression"]
 
 [dependencies]
 anyhow = "1.0.28"
