@@ -11,10 +11,36 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 #![feature(associated_type_bounds)]
 #![feature(seek_convenience)]
 #![feature(test)]
+
+//! A library of some early compression algorithms based on replacement schemes.
+//!
+//! This library implements the standard [Huffman coding] scheme and two
+//! precursors to the the Huffman scheme often called [Shannon-Fano coding].
+//!
+//! [Huffman coding]: https://en.wikipedia.org/wiki/Huffman_coding
+//! [Shannon-Fano coding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
+//!
+//! # Usage
+//!
+//! cshannon provides a binary that can be used for compression / decompression
+//! at the command line and a library that can be integrated in other projects.
+//!
+//! Run `cshannon --help` to see the command line options for the binary.
+//!
+//! The easiest way to use cshannon library is:
+//! ```
+//! use cshannon::{Args, run}
+//!
+//! run(Args{
+//!     command: "compress",
+//!     input_file: "/path/to/input_file",
+//!     output_file: "/path/to/output_file",
+//!     tokenizer: "byte",
+//!     encoding: "fano",
+//! })
 
 pub mod code;
 pub mod coder;
