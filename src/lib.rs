@@ -18,7 +18,7 @@
 //! A library of some early compression algorithms based on replacement schemes.
 //!
 //! This library implements the standard [Huffman coding] scheme and two
-//! precursors to the the Huffman scheme often called [Shannon-Fano coding].
+//! precursors to the Huffman scheme often called [Shannon-Fano coding].
 //!
 //! [Huffman coding]: https://en.wikipedia.org/wiki/Huffman_coding
 //! [Shannon-Fano coding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
@@ -26,13 +26,13 @@
 //! # Usage
 //!
 //! cshannon provides a binary that can be used for compression / decompression
-//! at the command line and a library that can be integrated in other projects.
+//! at the command line and a library that can be integrated into other projects.
 //!
-//! Run `cshannon --help` to see the command line options for the binary.
+//! Run `cshannon --help` to see the command-line options for the binary.
 //!
 //! The easiest way to use cshannon library is:
 //! ```
-//! use cshannon::{Args, run}
+//! use cshannon::{Args, run};
 //!
 //! run(Args{
 //!     command: "compress",
@@ -40,7 +40,57 @@
 //!     output_file: "/path/to/output_file",
 //!     tokenizer: "byte",
 //!     encoding: "fano",
-//! })
+//! });
+//! ```
+//!
+//! # Crate layout
+//!
+//! The abstract steps in compression are as follows:
+//!
+//! ```ascii-art
+//! Input --> Tokens --> Model --> Encoding -+
+//!   |                                      |
+//!   +-----> Tokens ------------------------+--> Compressed
+//!                                                 Output
+//! ```
+//!
+//! Different modules in the crate correspond to each of these steps.
+//!
+//! - The [tokens] module provides traits for tokenizing text. Three concrete
+//!   tokenization schemes are implemented: [bytes], [graphemes] and [words].
+//! - The [model] module provides a way to compute a zeroeth order model from a
+//!   stream of tokens.
+//! - The [encoding] module provides traits for creating an encoding scheme from
+//!   a model. Four concrete encoding schemes are implemented: [balanced_tree],
+//!   [shannon], [fano] and [huffman].
+//! - Finally, the [code] module provides methods to encode a token stream given
+//!   an encoding. The encoding itself is also included in the compressed
+//!   output.
+//!
+//! The abstract steps for decompression are as follows:
+//!
+//! ```ascii-art
+//! Compressed --> extract prefix --> Encoding
+//!   Input                              |
+//!    |                                 |
+//!    +--> remaining data --------------+--> Output
+//! ```
+//!
+//! Decompression is conceptually simpler because there are no choices (of
+//! tokenizer and encoding). The encoding is included as a prefix in-band in the
+//! compressed data. Most of the decompression logic resides in the [code]
+//! module.
+//!
+//! [balanced_tree]: encoding/balanced_tree/index.html
+//! [bytes]: tokens/bytes/index.html
+//! [encoding]: encoding/index.html
+//! [fano]: encoding/fano/index.html
+//! [graphemes]: tokens/graphemes/index.html
+//! [huffman]: encoding/huffman/index.html
+//! [model]: model/index.html
+//! [shannon]: encoding/shannon/index.html
+//! [tokens]: tokens/index.html
+//! [words]: tokens/words/index.html
 
 pub mod code;
 pub mod coder;
