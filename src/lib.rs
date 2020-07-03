@@ -93,7 +93,6 @@
 //! [words]: tokens/words/index.html
 
 pub mod code;
-pub mod coder;
 pub mod encoding;
 pub mod model;
 pub mod tokens;
@@ -195,7 +194,7 @@ where
 
     let r = BufReader::new(File::open(input_file)?);
     let tokens = TIter::unpack(r).map(|r| r.unwrap());
-    let code_text = coder::encode(encoding.map(), tokens).map(|r| r.unwrap());
+    let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
     crate::tokens::pack_all::<_, _, TPacker>(encoding.tokens(), &mut w)?;
@@ -245,11 +244,39 @@ where
     log_decoder_ring(&map);
 
     let coded_text = crate::code::parse(&alphabet, br)?.map(|r| r.unwrap());
-    let tokens = crate::coder::decode(&map, coded_text).map(|r| r.unwrap());
+    let tokens = decode(&map, coded_text).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
     TPacker::pack(tokens, &mut w)?;
     Ok(())
+}
+
+fn encode<'a, T, TS>(
+    encoding: &'a HashMap<T, Letter>,
+    input: TS,
+) -> impl Iterator<Item = Result<&'a Letter>>
+where
+    T: Token,
+    TS: std::iter::Iterator<Item = T>,
+{
+    input.map(move |t| match encoding.get(&t) {
+        Some(l) => Ok(l),
+        None => Err(anyhow!("Unknown token {}", t.to_string())),
+    })
+}
+
+fn decode<'a, T, CS: 'a>(
+    encoding: &'a HashMap<Letter, T>,
+    input: CS,
+) -> impl Iterator<Item = Result<T>> + 'a
+where
+    T: Token,
+    CS: std::iter::Iterator<Item = &'a Letter>,
+{
+    input.map(move |l| match encoding.get(l) {
+        Some(t) => Ok((*t).clone()),
+        None => Err(anyhow!("no encoding for letter {}", l)),
+    })
 }
 
 fn log_decoder_ring<T: Token>(m: &HashMap<Letter, T>) {
