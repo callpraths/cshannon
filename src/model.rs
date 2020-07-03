@@ -12,13 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Exports [`Model`], a statically computed zero order model over a [`Token`]
+//! stream.
+//!
+//! The function [`from`] consumes a [`TokenIter`] to generate a [`Model`].
+//!
+//! [`from`]: fn.from.html
+//! [`Model`]: struct.Model.html
+//! [`Token`]: ../tokens/trait.Token.html
+//! [`TokenIter`]: ../tokens/trait.TokenIter.html
+
 use crate::tokens::Token;
 use std::collections::HashMap;
 
-/// A zeroeth order precomputed model for compression.
+/// A statically computed zero order model for compression.
 ///
-/// The model computes certain Stats on input Tokens that can be useful for
-/// statistical compression techniques.
+/// The model exports certain statistics on input [`Token`] set that are useful
+/// for statistical compression techniques.
+///
+/// [`Token`]: ../tokens/trait.Token.html
 pub struct Model<T: Token>(HashMap<T, Stats>);
 
 struct Stats {
@@ -27,7 +39,9 @@ struct Stats {
 }
 
 impl<T: Token> Model<T> {
-    /// Frequency of occurrence of the key t.
+    /// Frequency of occurrence of a [`Token`].
+    ///
+    /// [`Token`]: ../tokens/trait.Token.html
     pub fn frequency(&self, t: &T) -> u64 {
         match self.0.get(t) {
             Some(s) => s.f,
@@ -35,7 +49,9 @@ impl<T: Token> Model<T> {
         }
     }
 
-    /// Probability of occurrence of the key t.
+    /// Probability of occurrence of a [`Token`].
+    ///
+    /// [`Token`]: ../tokens/trait.Token.html
     pub fn probability(&self, t: &T) -> f64 {
         match self.0.get(t) {
             Some(s) => s.p,
@@ -43,16 +59,25 @@ impl<T: Token> Model<T> {
         }
     }
 
+    /// [`Token`] count in the model.
+    ///
+    /// [`Token`]: ../tokens/trait.Token.html
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    /// Return whether this model is empty.
+    ///
+    /// Semantically equivalent, but possibly faster, implementation of
+    /// `(self.len() == 0)`
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    /// Returns a vector of `Token`'s in the map, sorted by relative
-    /// frequencies, highest first.
+    /// Return the [`Token`] set in the model sorted by relative frequencies,
+    /// highest first.
+    ///
+    /// [`Token`]: ../tokens/trait.Token.html
     pub fn tokens_sorted(&self) -> Vec<T> {
         let mut keys = Vec::with_capacity(self.0.len());
         for k in self.0.keys() {
@@ -63,7 +88,9 @@ impl<T: Token> Model<T> {
     }
 }
 
-/// Generate a zeroeth order model from the given Tokens.
+/// Generate a zero order model from the given [`Token`] stream.
+///
+/// [`Token`]: ../tokens/trait.Token.html
 pub fn from<T, TS>(ts: TS) -> Model<T>
 where
     T: Token,
@@ -82,6 +109,13 @@ where
     m
 }
 
+/// Instantiate a zero order model from the given precomputed frequencies.
+///
+/// Intended to be used only from unit-tests, to avoid dependence on internal
+/// computation of frequencies in [`from`].
+///
+/// [`from`]: fn.from.html
+/// [`Token`]: ../tokens/trait.Token.html
 pub fn with_frequencies<T: Token>(fs: &[(T, u64)]) -> Model<T> {
     let fs: HashMap<T, u64> = fs.to_vec().into_iter().collect();
     let total = fs.values().sum::<u64>() as f64;
