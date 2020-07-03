@@ -18,6 +18,7 @@
 
 use crate::tokens::{Token, TokenIter, TokenPacker};
 use anyhow::{Error, Result};
+use std::convert::From;
 use std::fmt;
 use std::hash::Hash;
 
@@ -31,11 +32,6 @@ pub struct ByteIter<R: std::io::Read>(R);
 /// A `TokenPacker` for packing `Byte`s.
 pub struct BytePacker();
 
-/// Used for tests in tokens module, not re-exported.
-pub fn new(v: u8) -> Byte {
-    Byte(v)
-}
-
 impl std::fmt::Display for Byte {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:#04x}", &self.0)
@@ -45,6 +41,12 @@ impl std::fmt::Display for Byte {
 impl Token for Byte {
     fn bit_count(&self) -> usize {
         8
+    }
+}
+
+impl From<u8> for Byte {
+    fn from(data: u8) -> Self {
+        Self(data)
     }
 }
 

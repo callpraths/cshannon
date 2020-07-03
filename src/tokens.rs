@@ -156,16 +156,16 @@ mod roundtrip_with_len_tests {
     #[test]
     fn non_empty() {
         let tokens = vec![
-            bytes::new(0),
-            bytes::new(1),
-            bytes::new(2),
-            bytes::new(3),
-            bytes::new(0),
-            bytes::new(4),
-            bytes::new(5),
-            bytes::new(0),
-            bytes::new(1),
-            bytes::new(0),
+            bytes::Byte::from(0),
+            bytes::Byte::from(1),
+            bytes::Byte::from(2),
+            bytes::Byte::from(3),
+            bytes::Byte::from(0),
+            bytes::Byte::from(4),
+            bytes::Byte::from(5),
+            bytes::Byte::from(0),
+            bytes::Byte::from(1),
+            bytes::Byte::from(0),
         ];
         let mut buf = Vec::<u8>::new();
         assert!(pack_all::<_, _, BytePacker>(tokens.clone(), &mut buf).is_ok());
@@ -175,7 +175,11 @@ mod roundtrip_with_len_tests {
 
     #[test]
     fn trailing_byte_data() {
-        let tokens = vec![bytes::new(0), bytes::new(1), bytes::new(2)];
+        let tokens = vec![
+            bytes::Byte::from(0),
+            bytes::Byte::from(1),
+            bytes::Byte::from(2),
+        ];
         let mut buf = Vec::<u8>::new();
         assert!(pack_all::<_, _, BytePacker>(tokens.clone(), &mut buf).is_ok());
 
