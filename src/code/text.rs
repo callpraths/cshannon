@@ -19,9 +19,11 @@ use anyhow::{anyhow, Error, Result};
 use log::trace;
 use std::u64;
 
-/// Write a packed stream of letters.
+/// Write a packed stream of [`Letter`]s.
 ///
 /// Returns the number of bytes written.
+///
+/// [`Letter`]: ../letter/struct.Letter.html
 pub fn pack<'a, I, W>(letters: I, w: &mut W) -> Result<usize>
 where
     I: Iterator<Item = &'a Letter>,
@@ -60,7 +62,10 @@ where
     Ok(bytes_written)
 }
 
-/// Read previously pack()ed text given the corresponding Alphabet.
+/// Read previously [`pack`]ed text given the corresponding [`Alphabet`].
+///
+/// [`Alphabet`]: ../alphabet/struct.Alphabet.html
+/// [`pack`]: fn.pack.html
 pub fn parse<'a, R>(
     a: &'a Alphabet,
     r: R,

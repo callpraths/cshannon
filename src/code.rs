@@ -12,6 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides facilities to read & write data encoded with a [prefix code].
+//!
+//! A [`Letter`] holds a single code-point of the prefix code. The (ordered) set
+//! of all code-points is an [`Alphabet`].
+//!
+//! The two main functions exported from this module are [`pack`] (to pack a
+//! stream of code-points into a buffer) and [`unpack`] (to unpack a stream of
+//! code-points from a buffer, given the [`Alphabet`] of code-points).
+//!
+//! [`Alphabet`]: struct.Alphabet.html
+//! [`Letter`]: struct.Letter.html
+//! [`pack`]: fn.pack.html
+//! [prefix code]: https://en.wikipedia.org/wiki/Prefix_code
+//! [`unpack`]: fn.unpack.html
+
 mod alphabet;
 mod common;
 mod letter;
