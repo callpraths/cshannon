@@ -27,19 +27,13 @@ use std::fmt;
 use std::hash::Hash;
 
 /// A [`Token`] consisting of a Unicode grapheme cluster.
-///
-/// [`Token`]: ../trait.Token.html
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Grapheme(String);
 
 /// Provides a method to create a [`Grapheme`] stream from text.
-///
-/// [`Grapheme`]: struct.Grapheme.html
 pub type GraphemeIter = string_parts::StringPartsIter<Grapheme>;
 
 /// Provides a method to pack a [`Grapheme`] stream to text.
-///
-/// [`Grapheme`]: struct.Grapheme.html
 pub type GraphemePacker = string_parts::StringPartsPacker<Grapheme>;
 
 impl From<String> for Grapheme {

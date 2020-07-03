@@ -51,9 +51,7 @@ pub mod words;
 
 /// A single item in the tokenized stream from a string input.
 ///
-/// Tokens may be used as keys in a [`HashMap`].
-///
-/// [`HashMap`]: https://doc.rust-lang.org/beta/std/collections/struct.HashMap.html
+/// Tokens may be used as keys in a [`HashMap`](std::collections::HashMap).
 pub trait Token: Clone + Display + Eq + std::hash::Hash {
     // The number of bits of source text contained in this Token.
     fn bit_count(&self) -> usize;
@@ -64,8 +62,6 @@ pub trait Token: Clone + Display + Eq + std::hash::Hash {
 /// Errors in reading tokens are reported in-stream.
 /// All token implementations return a type that implements this treat from the
 /// associated `unpack` function.
-///
-/// [`Token`]: trait.Token.html
 pub trait TokenIter<R>: std::iter::Iterator<Item = Result<<Self as TokenIter<R>>::T>>
 where
     R: std::io::Read,
@@ -76,8 +72,6 @@ where
 }
 
 /// Provides a method to pack a [`Token`] stream to text.
-///
-/// [`Token`]: trait.Token.html
 pub trait TokenPacker<W>
 where
     W: std::io::Write,
@@ -91,9 +85,7 @@ where
 
 /// Packs a vector of tokens prefixed with the length of the vector.
 ///
-/// See [`unpack_all`] for the reverse operation.
-///
-/// [`unpack_all`]: fn.unpack_all.html
+/// See [`unpack_all()`] for the reverse operation.
 pub fn pack_all<W, T, TP>(tokens: Vec<T>, w: &mut W) -> Result<()>
 where
     W: std::io::Write,
@@ -108,9 +100,7 @@ where
     Ok(())
 }
 
-/// Unpacks a vector of tokens previously packed with [`pack_all`].
-///
-/// [`pack_all`]: fn.pack_all.html
+/// Unpacks a vector of tokens previously packed with [`pack_all()`].
 pub fn unpack_all<R, T, TI>(mut r: &mut R) -> Result<Vec<T>>
 where
     R: std::io::Read,

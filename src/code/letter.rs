@@ -69,16 +69,16 @@ impl Letter {
 
     /// Create a new letter with 0 bits.
     ///
-    /// Useful for incremental construction using `self.push0()` and
-    /// `self.push1()`.
+    /// Useful for incremental construction using [`Self::push0()`] and
+    /// [`Self::push1()`].
     pub fn empty() -> Self {
         Letter::with_capacity(0)
     }
 
-    /// Create a new letter with 0 bits but with capacity for `hint` bits.
+    /// Create a new letter with 0 bits but with a capacity hint.
     ///
-    /// Useful for incremental construction using `self.push0()` and
-    /// `self.push1()`.
+    /// Useful for incremental construction using [`Self::push0()`] and
+    /// [`Self::push1()`].
     pub fn with_capacity(capacity: u64) -> Self {
         Self {
             data: Vec::with_capacity(((capacity + 7) / 8) as usize),

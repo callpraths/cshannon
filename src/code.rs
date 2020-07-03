@@ -17,15 +17,11 @@
 //! A [`Letter`] holds a single code-point of the prefix code. The (ordered) set
 //! of all code-points is an [`Alphabet`].
 //!
-//! The two main functions exported from this module are [`pack`] (to pack a
-//! stream of code-points into a buffer) and [`unpack`] (to unpack a stream of
+//! The two main functions exported from this module are [`pack()`] (to pack a
+//! stream of code-points into a buffer) and [`parse()`] (to unpack a stream of
 //! code-points from a buffer, given the [`Alphabet`] of code-points).
 //!
-//! [`Alphabet`]: struct.Alphabet.html
-//! [`Letter`]: struct.Letter.html
-//! [`pack`]: fn.pack.html
 //! [prefix code]: https://en.wikipedia.org/wiki/Prefix_code
-//! [`unpack`]: fn.unpack.html
 
 mod alphabet;
 mod common;

@@ -57,12 +57,14 @@
 //! Different modules in the crate correspond to each of these steps.
 //!
 //! - The [tokens] module provides traits for tokenizing text. Three concrete
-//!   tokenization schemes are implemented: [bytes], [graphemes] and [words].
+//!   tokenization schemes are implemented: [tokens::bytes], [tokens::graphemes]
+//!   and [tokens::words].
 //! - The [model] module provides a way to compute a zeroeth order model from a
 //!   stream of tokens.
 //! - The [encoding] module provides traits for creating an encoding scheme from
-//!   a model. Four concrete encoding schemes are implemented: [balanced_tree],
-//!   [shannon], [fano] and [huffman].
+//!   a model. Four concrete encoding schemes are implemented:
+//!   [encoding::balanced_tree], [encoding::shannon], [encoding::fano] and
+//!   [encoding::huffman].
 //! - Finally, the [code] module provides methods to encode a token stream given
 //!   an encoding. The encoding itself is also included in the compressed
 //!   output.
@@ -80,17 +82,6 @@
 //! tokenizer and encoding). The encoding is included as a prefix in-band in the
 //! compressed data. Most of the decompression logic resides in the [code]
 //! module.
-//!
-//! [balanced_tree]: encoding/balanced_tree/index.html
-//! [bytes]: tokens/bytes/index.html
-//! [encoding]: encoding/index.html
-//! [fano]: encoding/fano/index.html
-//! [graphemes]: tokens/graphemes/index.html
-//! [huffman]: encoding/huffman/index.html
-//! [model]: model/index.html
-//! [shannon]: encoding/shannon/index.html
-//! [tokens]: tokens/index.html
-//! [words]: tokens/words/index.html
 
 pub mod code;
 pub mod encoding;

@@ -24,9 +24,7 @@ impl Alphabet {
     /// Create a new Alphabet with the given [`Letter`]s.
     ///
     /// The order of letters is significant.
-    /// `self.pack()` & `self.unpack()` conserve the order.
-    ///
-    /// [`Letter`]: ../letter/struct.Letter.html
+    /// [`Self::pack()`] & [`Self::unpack()`] conserve the order.
     pub fn new(letters: Vec<Letter>) -> Result<Self> {
         let a = Alphabet(letters);
         a.validate()?;
@@ -44,8 +42,6 @@ impl Alphabet {
     }
 
     /// Return a reference to the ordered [`Letter`]s in this alphabet.
-    ///
-    /// [`Letter`]: ../letter/struct.Letter.html
     pub fn letters(&self) -> &Vec<Letter> {
         &self.0
     }
@@ -61,9 +57,9 @@ impl Alphabet {
     }
 }
 
-/// An alphabet may be generated from an iterator over Letter.
+/// An alphabet may be generated from an iterator over letters.
 ///
-/// This operation `clone()`s the Letters.
+/// This operation clones each provided letter.
 impl<'a> std::iter::FromIterator<&'a Letter> for Alphabet {
     fn from_iter<I: IntoIterator<Item = &'a Letter>>(i: I) -> Self {
         let mut a = Alphabet(Vec::new());
@@ -75,11 +71,9 @@ impl<'a> std::iter::FromIterator<&'a Letter> for Alphabet {
 }
 
 impl Alphabet {
-    /// Serialize the alphabet to a [`Write`]er.
+    /// Serialize the alphabet to a [`Write`er](std::io::Write).
     ///
-    /// Can be deserialized back to an alphabet with `self.unpack()`.
-    ///
-    /// [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
+    /// Can be deserialized back to an alphabet with [`Self::unpack()`].
     pub fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()> {
         let letter_count = self.0.len();
         w.write_all(&pack_u64(letter_count as u64))?;
@@ -89,9 +83,8 @@ impl Alphabet {
         Ok(())
     }
 
-    /// Deserialize a data generated with [`Self::pack()`] from a [`Read`]er.
-    ///
-    /// [`Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
+    /// Deserialize a data generated with [`Self::pack()`] from a
+    /// [`Read`er](std::io::Read).
     pub fn unpack<R: std::io::Read>(mut r: R) -> Result<Self> {
         let letter_count = unpack_u64(&mut r)?;
         let mut letters = Vec::new();

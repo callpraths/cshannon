@@ -23,19 +23,13 @@ use std::fmt;
 use std::hash::Hash;
 
 /// A [`Token`] consisting of a single byte of data.
-///
-/// [`Token`]: ../trait.Token.html
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Byte(u8);
 
 /// Provides a method to create a [`Byte`] stream from text.
-///
-/// [`Byte`]: struct.Byte.html
 pub struct ByteIter<R: std::io::Read>(R);
 
 /// Provides a method to pack a [`Byte`] stream to text.
-///
-/// [`Byte`]: struct.Byte.html
 pub struct BytePacker();
 
 impl std::fmt::Display for Byte {

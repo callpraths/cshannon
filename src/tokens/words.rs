@@ -32,19 +32,13 @@ use std::hash::Hash;
 ///
 /// Tokenizing to `Word` is lossy because non-word characters (e.g.
 /// punctuations) are lost.
-///
-/// [`Token`]: ../trait.Token.html
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Word(String);
 
 /// Provides a method to create a [`Word`] stream from text.
-///
-/// [`Wrod`]: struct.Word.html
 pub type WordIter = string_parts::StringPartsIter<Word>;
 
 /// Provides a method to pack a [`Word`] stream to text.
-///
-/// [`Word`]: struct.Word.html
 pub type WordPacker = string_parts::StringPartsPacker<Word>;
 
 impl From<String> for Word {

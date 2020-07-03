@@ -19,10 +19,6 @@
 //!
 //! The generated [`Encoding`] is stable: calling `new` on a [`Model`]
 //! repeatedly yields the same [`Encoding`].
-//!
-//! [`Encoding`]: ../struct.Encoding.html
-//! [`Letter`]: ../../code/letter/struct.Letter.html
-//! [`Model`]: ../../model/struct.Model.html
 
 use super::Encoding;
 use crate::code::Letter;

@@ -14,18 +14,9 @@
 
 //! Defines the [`Encoding`] struct that maps a [`Token`] to a [`Letter`].
 //!
-//! An [`Encoding`] can be generated from a [`Model`] by calling the `new`
-//! function defined in one of the sub-modules: [balanced_tree], [shannon],
-//! [fano], or [huffman].
-//!
-//! [balanced_tree]: balanced_tree/index.html
-//! [`Encoding`]: struct.Encoding.html
-//! [fano]: fano/index.html
-//! [huffman]: huffman/index.html
-//! [`Letter`]: ../code/letter/struct.Letter.html
-//! [`Model`]: ../model/struct.Model.html
-//! [shannon]: shannon/index.html
-//! [`Token`]: ../tokens/trait.Token.html
+//! An [`Encoding`] can be generated from a [`Model`](crate::model::Model) by
+//! calling the `new()` function defined in one of the sub-modules:
+//! [balanced_tree], [shannon], [fano], or [huffman].
 
 use crate::code::{Alphabet, Letter};
 use crate::tokens::Token;
@@ -39,9 +30,6 @@ pub mod huffman;
 pub mod shannon;
 
 /// Maps a [`Token`] to a [`Letter`].
-///
-/// [`Model`]: ../model/struct.Model.html
-/// [`Token`]: ../tokens/trait.Token.html
 #[derive(Debug, Eq, PartialEq)]
 pub struct Encoding<T: Token> {
     map: HashMap<T, Letter>,
@@ -50,8 +38,6 @@ pub struct Encoding<T: Token> {
 
 impl<T: Token> Encoding<T> {
     /// The [`Alphabet`] used by this encoding.
-    ///
-    /// [`Alphabet`]: ../code/alphabet/struct.Alphabet.html
     pub fn alphabet(&self) -> &Alphabet {
         &self.alphabet
     }
@@ -59,10 +45,7 @@ impl<T: Token> Encoding<T> {
     /// The set of [`Token`]s covered by this encoding.
     ///
     /// The returned set is sorted in a stable order corresponding to the order
-    /// of letters in `self.alphabet()`
-    ///
-    /// [`Letter`]: ../code/letter/struct.Letter.html
-    /// [`Token`]: ../tokens/trait.Token.html
+    /// of letters in [`Self::alphabet()`]
     pub fn tokens(&self) -> Vec<T> {
         let m = self.reverse_map();
         let mut letters: Vec<&Letter> = self.map.values().collect();
@@ -72,9 +55,8 @@ impl<T: Token> Encoding<T> {
 
     /// The encoding map.
     ///
-    /// Exposes the internal [`HashMap`] via an immutable reference.
-    ///
-    /// [`HashMap`]: https://doc.rust-lang.org/beta/std/collections/struct.HashMap.html
+    /// Exposes the internal [`HashMap`](std::collections::HashMap) via an
+    /// immutable reference.
     pub fn map(&self) -> &HashMap<T, Letter> {
         &self.map
     }

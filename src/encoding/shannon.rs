@@ -28,7 +28,6 @@
 //! Then, the code is `e1, e2, e3 ...`
 //! such that `ek` = first `lk` bits of the binary expansion of `Fk`.
 //!
-//! [`Encoding`]: ../struct.Encoding.html
 //! [Shannon encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
 
 use super::Encoding;
