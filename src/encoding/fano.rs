@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Create a new [Fano encoding].
+//!
+//! [Fano encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
+
 use super::Encoding;
 use crate::code::Letter;
 use crate::model::Model;
@@ -20,6 +24,11 @@ use anyhow::Result;
 use log::trace;
 use std::collections::HashMap;
 
+/// Create a new Shannon encoding.
+///
+/// See [package documentation] for details.
+///
+/// [package documentation]: index.html
 pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
 where
     T: Token,

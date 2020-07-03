@@ -12,6 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Create a new [Shannon encoding].
+//!
+//! The Shannon encoding scheme is defined thus:
+//!
+//! Let the tokens, sorted in decreasing order of frequency be
+//! `t1, t2, t3 ...`
+//!
+//! Let the probability of occurrence of the Tokens be `f1, f2, f3 ...`
+//!
+//! Define the numbers `l1, l2, l3 ...` such that `lk` = `ceil(log2(1/fk))`
+//!
+//! Let the (computed) cumulative proportions be `c1, c2, c3 ...`
+//!
+//! Then, the code is `e1, e2, e3 ...`
+//! such that `ek` = first `lk` bits of the binary expansion of `Fk`.
+//!
+//! [`Encoding`]: ../struct.Encoding.html
+//! [Shannon encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
+
 use super::Encoding;
 use crate::code::Letter;
 use crate::model::Model;
@@ -20,23 +39,11 @@ use anyhow::Result;
 use log::{debug, log_enabled, Level};
 use std::collections::HashMap;
 
-/// Create a new Shannon `Encoding`.
+/// Create a new Shannon encoding.
 ///
-/// The Shannon encoding scheme is defined thus:
+/// See [package documentation] for details.
 ///
-/// Let the tokens, sorted in decreasing order of frequency be
-///     t1, t2, t3 ...
-/// Let the probability of occurrence of the Tokens be
-///     f1, f2, f3 ...
-/// Define the numbers
-///     l1, l2, l3 ...
-///     such that lk = ceil(log2(1/fk))
-/// Let the (computed) cumulative proportions be
-///     c1, c2, c3 ...
-///
-/// Then, the code is
-///     e1, e2, e3 ...
-///     such that ek = first lk bits of the binary expansion of Fk.
+/// [package documentation]: index.html
 pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
 where
     T: Token,

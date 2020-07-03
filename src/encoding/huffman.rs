@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Create a new [Huffman encoding].
+//!
+//! [Huffman encoding]: https://en.wikipedia.org/wiki/Huffman_coding
+
 use super::Encoding;
 use crate::code::Letter;
 use crate::model::Model;
@@ -23,6 +27,11 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+/// Create a new Huffman encoding.
+///
+/// See [package documentation] for details.
+///
+/// [package documentation]: index.html
 pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
 where
     T: Token,
