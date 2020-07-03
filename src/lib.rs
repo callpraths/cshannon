@@ -11,13 +11,79 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 #![feature(associated_type_bounds)]
 #![feature(seek_convenience)]
 #![feature(test)]
 
+//! A library of some early compression algorithms based on replacement schemes.
+//!
+//! This library implements the standard [Huffman coding] scheme and two
+//! precursors to the Huffman scheme often called [Shannon-Fano coding].
+//!
+//! [Huffman coding]: https://en.wikipedia.org/wiki/Huffman_coding
+//! [Shannon-Fano coding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
+//!
+//! # Usage
+//!
+//! cshannon provides a binary that can be used for compression / decompression
+//! at the command line and a library that can be integrated into other projects.
+//!
+//! Run `cshannon --help` to see the command-line options for the binary.
+//!
+//! The easiest way to use cshannon library is:
+//! ```
+//! use cshannon::{Args, run};
+//!
+//! run(Args{
+//!     command: "compress",
+//!     input_file: "/path/to/input_file",
+//!     output_file: "/path/to/output_file",
+//!     tokenizer: "byte",
+//!     encoding: "fano",
+//! });
+//! ```
+//!
+//! # Crate layout
+//!
+//! The abstract steps in compression are as follows:
+//!
+//! ```ascii-art
+//! Input --> Tokens --> Model --> Encoding -+
+//!   |                                      |
+//!   +-----> Tokens ------------------------+--> Compressed
+//!                                                 Output
+//! ```
+//!
+//! Different modules in the crate correspond to each of these steps.
+//!
+//! - The [tokens] module provides traits for tokenizing text. Three concrete
+//!   tokenization schemes are implemented: [tokens::bytes], [tokens::graphemes]
+//!   and [tokens::words].
+//! - The [model] module provides a way to compute a zeroeth order model from a
+//!   stream of tokens.
+//! - The [encoding] module provides traits for creating an encoding scheme from
+//!   a model. Four concrete encoding schemes are implemented:
+//!   [encoding::balanced_tree], [encoding::shannon], [encoding::fano] and
+//!   [encoding::huffman].
+//! - Finally, the [code] module provides methods to encode a token stream given
+//!   an encoding. The encoding itself is also included in the compressed
+//!   output.
+//!
+//! The abstract steps for decompression are as follows:
+//!
+//! ```ascii-art
+//! Compressed --> extract prefix --> Encoding
+//!   Input                              |
+//!    |                                 |
+//!    +--> remaining data --------------+--> Output
+//! ```
+//!
+//! Decompression is conceptually simpler because there are no choices (of
+//! tokenizer and encoding). The encoding is included as a prefix in-band in the
+//! compressed data. Most of the decompression logic resides in the [code]
+//! module.
+
 pub mod code;
-pub mod coder;
 pub mod encoding;
 pub mod model;
 pub mod tokens;
@@ -119,7 +185,7 @@ where
 
     let r = BufReader::new(File::open(input_file)?);
     let tokens = TIter::unpack(r).map(|r| r.unwrap());
-    let code_text = coder::encode(encoding.map(), tokens).map(|r| r.unwrap());
+    let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
     crate::tokens::pack_all::<_, _, TPacker>(encoding.tokens(), &mut w)?;
@@ -169,11 +235,39 @@ where
     log_decoder_ring(&map);
 
     let coded_text = crate::code::parse(&alphabet, br)?.map(|r| r.unwrap());
-    let tokens = crate::coder::decode(&map, coded_text).map(|r| r.unwrap());
+    let tokens = decode(&map, coded_text).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
     TPacker::pack(tokens, &mut w)?;
     Ok(())
+}
+
+fn encode<'a, T, TS>(
+    encoding: &'a HashMap<T, Letter>,
+    input: TS,
+) -> impl Iterator<Item = Result<&'a Letter>>
+where
+    T: Token,
+    TS: std::iter::Iterator<Item = T>,
+{
+    input.map(move |t| match encoding.get(&t) {
+        Some(l) => Ok(l),
+        None => Err(anyhow!("Unknown token {}", t.to_string())),
+    })
+}
+
+fn decode<'a, T, CS: 'a>(
+    encoding: &'a HashMap<Letter, T>,
+    input: CS,
+) -> impl Iterator<Item = Result<T>> + 'a
+where
+    T: Token,
+    CS: std::iter::Iterator<Item = &'a Letter>,
+{
+    input.map(move |l| match encoding.get(l) {
+        Some(t) => Ok((*t).clone()),
+        None => Err(anyhow!("no encoding for letter {}", l)),
+    })
 }
 
 fn log_decoder_ring<T: Token>(m: &HashMap<Letter, T>) {

@@ -18,7 +18,9 @@ use log::trace;
 use std::convert::TryInto;
 use std::fmt;
 
-/// A Letter represents an indivisible code point.
+/// An indivisible code point with the [prefix property].
+///
+/// [prefix property]: https://en.wikipedia.org/wiki/Prefix_code
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Letter {
     data: Vec<u8>,
@@ -40,9 +42,9 @@ impl fmt::Display for Letter {
 }
 
 impl Letter {
-    /// Create a new Letter with given data and number of bits.
+    /// Create a new letter with given data and number of bits.
     ///
-    /// Trailing bits in data (beyond bit_count) are ignored.
+    /// Trailing bits in data (beyond `bit_count`) are ignored.
     pub fn new(data: &[u8], bit_count: u64) -> Self {
         let num_bytes = (bit_count + 7) as usize / 8;
         let mut l = Self {
@@ -65,18 +67,18 @@ impl Letter {
         self.data[last] &= mask;
     }
 
-    /// Creates a new `Letter` with 0 bits.
+    /// Create a new letter with 0 bits.
     ///
-    /// Useful for incremental construction with Letter::push0() and
-    /// Letter::push1().
+    /// Useful for incremental construction using [`Self::push0()`] and
+    /// [`Self::push1()`].
     pub fn empty() -> Self {
         Letter::with_capacity(0)
     }
 
-    /// Creates a new `Letter` with 0 bits but with capacity hint, in bit count.
+    /// Create a new letter with 0 bits but with a capacity hint.
     ///
-    /// Useful for incremental construction with Letter::push0() and
-    /// Letter::push1().
+    /// Useful for incremental construction using [`Self::push0()`] and
+    /// [`Self::push1()`].
     pub fn with_capacity(capacity: u64) -> Self {
         Self {
             data: Vec::with_capacity(((capacity + 7) / 8) as usize),
@@ -84,19 +86,19 @@ impl Letter {
         }
     }
 
-    /// Creates a new `Letter` with the given data.
+    /// Create a new letter with the given data.
     ///
-    /// The created letter has bit_count of 8 * len(bytes).
+    /// The created letter has `bit_count` of `8 * len(bytes)`.
     pub fn from_bytes(bytes: &[u8]) -> Self {
         Self::new(bytes, 8 * bytes.len() as u64)
     }
 
-    /// Extend this Letter with a 0 bit.
+    /// Extend this Letter with a `0` bit.
     pub fn push0(&mut self) {
         self.push(false);
     }
 
-    /// Extend this Letter with a 1 bit.
+    /// Extend this Letter with a `1` bit.
     pub fn push1(&mut self) {
         self.push(true)
     }

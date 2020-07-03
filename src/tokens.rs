@@ -12,6 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! This module provides traits for tokenizing text.
+//!
+//! The [`Token`] trait is the primary exported type from this module.
+//!
+//! The [`TokenIter`] trait provides a method to unpack text into a [`Token`]
+//! stream. The [`TokenPacker`] trait provides the opposite method to convert a
+//! [`Token`] stream to text.
+//!
+//! Additionally, two methods [`pack_all`] and [`unpack_all`] are provided to
+//! work with a [`Token`] set when the number of tokens is known apriori. In
+//! particular, [`unpack_all`] is guaranteed to only consume the required amount
+//! of data from the input.
+//!
+//! Three concrete tokenization schemes are exported from sub-modules:
+//! [bytes], [graphemes] and [words].
+//!
+//! [bytes]: bytes/index.html
+//! [graphemes]: graphemes/index.html
+//! [`pack_all`]: fn.pack_all.html
+//! [`Token`]: trait.Token.html
+//! [`TokenIter`]: trait.TokenIter.html
+//! [`TokenPacker`]: trait.TokenPacker.html
+//! [`unpack_all`]: fn.unpack_all.html
+//! [words]: words/index.html
+
 use anyhow::Result;
 use log::trace;
 use std::convert::TryFrom;
@@ -26,17 +51,17 @@ pub mod words;
 
 /// A single item in the tokenized stream from a string input.
 ///
-/// Tokens may be used as keys in std::collections::HashMap.
+/// Tokens may be used as keys in a [`HashMap`](std::collections::HashMap).
 pub trait Token: Clone + Display + Eq + std::hash::Hash {
     // The number of bits of source text contained in this Token.
     fn bit_count(&self) -> usize;
 }
 
-/// An iterator for `Token`s read from a `Read`er.
+/// Provides a method to create a [`Token`] stream from text.
 ///
 /// Errors in reading tokens are reported in-stream.
-/// All token implementations return TokenIter from the associated unpack()
-/// functions.
+/// All token implementations return a type that implements this treat from the
+/// associated `unpack` function.
 pub trait TokenIter<R>: std::iter::Iterator<Item = Result<<Self as TokenIter<R>>::T>>
 where
     R: std::io::Read,
@@ -46,6 +71,7 @@ where
     fn unpack(r: R) -> Self;
 }
 
+/// Provides a method to pack a [`Token`] stream to text.
 pub trait TokenPacker<W>
 where
     W: std::io::Write,
@@ -59,7 +85,7 @@ where
 
 /// Packs a vector of tokens prefixed with the length of the vector.
 ///
-/// See unpack_all() for the reverse operation.
+/// See [`unpack_all()`] for the reverse operation.
 pub fn pack_all<W, T, TP>(tokens: Vec<T>, w: &mut W) -> Result<()>
 where
     W: std::io::Write,
@@ -74,7 +100,7 @@ where
     Ok(())
 }
 
-/// Unpacks a vector of tokens previously packed with pack_with_len().
+/// Unpacks a vector of tokens previously packed with [`pack_all()`].
 pub fn unpack_all<R, T, TI>(mut r: &mut R) -> Result<Vec<T>>
 where
     R: std::io::Read,
@@ -95,8 +121,8 @@ fn pack_u64(s: u64) -> Vec<u8> {
     s.to_be_bytes().to_vec()
 }
 
-// TODO:: dedup with code::common::unpack_u64()
-pub fn unpack_u64<R: std::io::Read>(mut r: R) -> Result<u64> {
+// TODO: dedup with code::common::unpack_u64()
+fn unpack_u64<R: std::io::Read>(mut r: R) -> Result<u64> {
     let mut buf: [u8; 8] = [0; 8];
     r.read_exact(&mut buf)?;
     Ok(u64::from_be_bytes(buf))
@@ -120,16 +146,16 @@ mod roundtrip_with_len_tests {
     #[test]
     fn non_empty() {
         let tokens = vec![
-            bytes::new(0),
-            bytes::new(1),
-            bytes::new(2),
-            bytes::new(3),
-            bytes::new(0),
-            bytes::new(4),
-            bytes::new(5),
-            bytes::new(0),
-            bytes::new(1),
-            bytes::new(0),
+            bytes::Byte::from(0),
+            bytes::Byte::from(1),
+            bytes::Byte::from(2),
+            bytes::Byte::from(3),
+            bytes::Byte::from(0),
+            bytes::Byte::from(4),
+            bytes::Byte::from(5),
+            bytes::Byte::from(0),
+            bytes::Byte::from(1),
+            bytes::Byte::from(0),
         ];
         let mut buf = Vec::<u8>::new();
         assert!(pack_all::<_, _, BytePacker>(tokens.clone(), &mut buf).is_ok());
@@ -139,7 +165,11 @@ mod roundtrip_with_len_tests {
 
     #[test]
     fn trailing_byte_data() {
-        let tokens = vec![bytes::new(0), bytes::new(1), bytes::new(2)];
+        let tokens = vec![
+            bytes::Byte::from(0),
+            bytes::Byte::from(1),
+            bytes::Byte::from(2),
+        ];
         let mut buf = Vec::<u8>::new();
         assert!(pack_all::<_, _, BytePacker>(tokens.clone(), &mut buf).is_ok());
 

@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Defines the [`Encoding`] struct that maps a [`Token`] to a [`Letter`].
+//!
+//! An [`Encoding`] can be generated from a [`Model`](crate::model::Model) by
+//! calling the `new()` function defined in one of the sub-modules:
+//! [balanced_tree], [shannon], [fano], or [huffman].
+
 use crate::code::{Alphabet, Letter};
 use crate::tokens::Token;
 use anyhow::Result;
@@ -23,9 +29,7 @@ pub mod fano;
 pub mod huffman;
 pub mod shannon;
 
-/// An `Encoding` maps `Token`s to `Letter`s.
-///
-/// `Encoding`s are usually created by processing a `Model`.
+/// Maps a [`Token`] to a [`Letter`].
 #[derive(Debug, Eq, PartialEq)]
 pub struct Encoding<T: Token> {
     map: HashMap<T, Letter>,
@@ -33,17 +37,15 @@ pub struct Encoding<T: Token> {
 }
 
 impl<T: Token> Encoding<T> {
-    /// The `Alphabet` of `Letter`s used by this `Encoding`.
-    ///
-    /// The `Letter`s are returned in a stable order.
+    /// The [`Alphabet`] used by this encoding.
     pub fn alphabet(&self) -> &Alphabet {
         &self.alphabet
     }
 
-    /// The `Token`s covered by this `Encoding`.
+    /// The set of [`Token`]s covered by this encoding.
     ///
-    /// The `Token`s are returned in a stable order corresponding to the order
-    /// of `Letter`s in self.alphabet()
+    /// The returned set is sorted in a stable order corresponding to the order
+    /// of letters in [`Self::alphabet()`]
     pub fn tokens(&self) -> Vec<T> {
         let m = self.reverse_map();
         let mut letters: Vec<&Letter> = self.map.values().collect();
@@ -51,9 +53,10 @@ impl<T: Token> Encoding<T> {
         letters.into_iter().map(|l| m[l].clone()).collect()
     }
 
-    /// The `Encoding` map.
+    /// The encoding map.
     ///
-    /// Exposes the internal HashMap via an immutable reference.
+    /// Exposes the internal [`HashMap`](std::collections::HashMap) via an
+    /// immutable reference.
     pub fn map(&self) -> &HashMap<T, Letter> {
         &self.map
     }

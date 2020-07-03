@@ -12,6 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Create a new balanced tree [`Encoding`].
+//!
+//! All letters in this encoding are fixed width bit strings. The smallest width
+//! necessary to generate the required number of [`Letter`]s is used.
+//!
+//! The generated [`Encoding`] is stable: calling `new` on a [`Model`]
+//! repeatedly yields the same [`Encoding`].
+
 use super::Encoding;
 use crate::code::Letter;
 use crate::model::Model;
@@ -19,13 +27,11 @@ use crate::tokens::Token;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
-/// Create a new balanced tree `Encoding`.
+/// Create a new balanced tree encoding.
 ///
-/// All letters in this encoding are fixed width bit strings. The smallest width
-/// necessary to generate the required number of `Letter`s is used.
+/// See [package documentation] for details.
 ///
-/// The generated `Encoding` is stable: calling `new()` on a `Model` repeatedly
-/// will yield the same `Encoding`.
+/// [package documentation]: index.html
 pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
 where
     T: Token,

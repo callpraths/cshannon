@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-///! Contains Token implementations intended to help write unit tests.
+//! Contains Token implementations intended to help write unit tests.
+
 use super::Token;
 use std::fmt;
 
-/// A `Token` that wraps i32 values.
+/// A [`Token`] that wraps i32 values.
 ///
-/// Useful for unittests against the Token trait.
+/// Useful for unittests against the [`Token`] trait.
+///
+/// [`Token`]: ../trait.Token.html
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct I32Token(pub i32);
 

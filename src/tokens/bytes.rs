@@ -18,23 +18,19 @@
 
 use crate::tokens::{Token, TokenIter, TokenPacker};
 use anyhow::{Error, Result};
+use std::convert::From;
 use std::fmt;
 use std::hash::Hash;
 
-/// A `Token` consisting of a single byte of data.
+/// A [`Token`] consisting of a single byte of data.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Byte(u8);
 
-/// An iterator for `Byte`s read from a `Read`er.
+/// Provides a method to create a [`Byte`] stream from text.
 pub struct ByteIter<R: std::io::Read>(R);
 
-/// A `TokenPacker` for packing `Byte`s.
+/// Provides a method to pack a [`Byte`] stream to text.
 pub struct BytePacker();
-
-/// Used for tests in tokens module, not re-exported.
-pub fn new(v: u8) -> Byte {
-    Byte(v)
-}
 
 impl std::fmt::Display for Byte {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -45,6 +41,12 @@ impl std::fmt::Display for Byte {
 impl Token for Byte {
     fn bit_count(&self) -> usize {
         8
+    }
+}
+
+impl From<u8> for Byte {
+    fn from(data: u8) -> Self {
+        Self(data)
     }
 }
 
