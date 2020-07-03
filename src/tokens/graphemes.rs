@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! graphemes module implements tokenization of a string into unicode grapheme
-//! clusters.
+//! graphemes module implements tokenization of a string into [Unicode grapheme
+//! clusters].
 //!
 //! The stream makes zero copies internally while iterating over the stream.
+//!
+//! [Unicode grapheme clusters]: http://www.unicode.org/reports/tr29/
 
 use super::string_parts;
 use crate::tokens::Token;
@@ -24,14 +26,20 @@ use std::convert::{From, Into};
 use std::fmt;
 use std::hash::Hash;
 
-/// A `Token` consisting of a Unicode Grapheme.
+/// A [`Token`] consisting of a Unicode grapheme cluster.
+///
+/// [`Token`]: ../trait.Token.html
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Grapheme(String);
 
-/// An iterator for `Grapheme`s read from a `Read`er.
+/// Provides a method to create a [`Grapheme`] stream from text.
+///
+/// [`Grapheme`]: struct.Grapheme.html
 pub type GraphemeIter = string_parts::StringPartsIter<Grapheme>;
 
-/// A `TokenPacker` for packing `Grapheme`s.
+/// Provides a method to pack a [`Grapheme`] stream to text.
+///
+/// [`Grapheme`]: struct.Grapheme.html
 pub type GraphemePacker = string_parts::StringPartsPacker<Grapheme>;
 
 impl From<String> for Grapheme {

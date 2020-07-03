@@ -22,14 +22,20 @@ use std::convert::From;
 use std::fmt;
 use std::hash::Hash;
 
-/// A `Token` consisting of a single byte of data.
+/// A [`Token`] consisting of a single byte of data.
+///
+/// [`Token`]: ../trait.Token.html
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Byte(u8);
 
-/// An iterator for `Byte`s read from a `Read`er.
+/// Provides a method to create a [`Byte`] stream from text.
+///
+/// [`Byte`]: struct.Byte.html
 pub struct ByteIter<R: std::io::Read>(R);
 
-/// A `TokenPacker` for packing `Byte`s.
+/// Provides a method to pack a [`Byte`] stream to text.
+///
+/// [`Byte`]: struct.Byte.html
 pub struct BytePacker();
 
 impl std::fmt::Display for Byte {

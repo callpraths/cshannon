@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! words module implements tokenization of a string into unicode words.
+//! words module implements tokenization of a string into [Unicode words].
 //!
 //! Unicode words do not include punctuation marks, spaces etc. Thus, the
 //! original string is not always recoverable by concatenating the tokens.
 //!
 //! The stream makes zero copies internally while iterating over the stream.
+//!
+//! [Unicode words]: http://www.unicode.org/reports/tr29/
 
 use super::string_parts;
 use crate::tokens::Token;
@@ -26,17 +28,23 @@ use std::convert::{From, Into};
 use std::fmt;
 use std::hash::Hash;
 
-/// A `Token` consisting of a Unicode word.
+/// A [`Token`] consisting of a Unicode word.
 ///
-/// Tokenizing to `Word`s is lossy because non-word characters (e.g.
+/// Tokenizing to `Word` is lossy because non-word characters (e.g.
 /// punctuations) are lost.
+///
+/// [`Token`]: ../trait.Token.html
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Word(String);
 
-/// An iterator for `Word`s read from a `Read`er.
+/// Provides a method to create a [`Word`] stream from text.
+///
+/// [`Wrod`]: struct.Word.html
 pub type WordIter = string_parts::StringPartsIter<Word>;
 
-/// A `TokenPacker` to pack `Word`s.
+/// Provides a method to pack a [`Word`] stream to text.
+///
+/// [`Word`]: struct.Word.html
 pub type WordPacker = string_parts::StringPartsPacker<Word>;
 
 impl From<String> for Word {
