@@ -22,6 +22,8 @@ use log::{log_enabled, trace, Level};
 use std::convert::{From, Into};
 use std::marker::PhantomData;
 
+// Can't derive(Clone) because anyhow::Error is not `Clone`.
+#[derive(Debug)]
 pub struct StringPartsIter<S>(Option<Result<std::vec::IntoIter<S>>>)
 where
     S: From<String> + Token;
@@ -93,6 +95,7 @@ where
     }
 }
 
+#[derive(Clone, Copy, Debug, Default)]
 pub struct StringPartsPacker<S>(PhantomData<S>)
 where
     S: Into<String> + Token;

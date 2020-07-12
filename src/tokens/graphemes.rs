@@ -27,7 +27,7 @@ use std::fmt;
 use std::hash::Hash;
 
 /// A [`Token`] consisting of a Unicode grapheme cluster.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Grapheme(String);
 
 /// Provides a method to create a [`Grapheme`] stream from text.

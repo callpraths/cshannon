@@ -32,7 +32,7 @@ use std::hash::Hash;
 ///
 /// Tokenizing to `Word` is lossy because non-word characters (e.g.
 /// punctuations) are lost.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Word(String);
 
 /// Provides a method to create a [`Word`] stream from text.
