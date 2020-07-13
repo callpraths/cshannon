@@ -22,9 +22,8 @@ use log::{log_enabled, trace, Level};
 use std::convert::{From, Into};
 use std::marker::PhantomData;
 
-// Can't derive(Clone) because anyhow::Error is not `Clone`.
-#[derive(Debug)]
-pub struct StringPartsIter<S>(Option<Result<std::vec::IntoIter<S>>>)
+#[derive(Clone, Debug)]
+pub struct StringPartsIter<S>(Option<std::vec::IntoIter<S>>)
 where
     S: From<String> + Token;
 
@@ -37,19 +36,13 @@ where
         R: std::io::Read,
     {
         let mut data = Vec::<u8>::new();
-        if let Err(e) = r.read_to_end(&mut data) {
-            return Ok(Self(Some(Err(Error::new(e)))));
+        r.read_to_end(&mut data)?;
+        let s = std::str::from_utf8(&data)?;
+        let mut parts = Vec::<S>::new();
+        for g in s.graphemes(true) {
+            parts.push(S::from(g.to_owned()));
         }
-        match std::str::from_utf8(&data) {
-            Err(e) => Ok(Self(Some(Err(Error::new(e))))),
-            Ok(s) => {
-                let mut parts = Vec::<S>::new();
-                for g in s.graphemes(true) {
-                    parts.push(S::from(g.to_owned()));
-                }
-                Ok(Self(Some(Ok(parts.into_iter()))))
-            }
-        }
+        Ok(Self(Some(parts.into_iter())))
     }
 }
 
@@ -74,24 +67,22 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let mut store = None;
         std::mem::swap(&mut self.0, &mut store);
-        let mut i = match store {
+        match store {
             None => {
                 return None;
             }
-            Some(n) => match n {
-                Err(e) => return Some(Err(e)),
-                Ok(i) => i,
-            },
-        };
-        let result = i.next();
-        std::mem::swap(&mut Some(Ok(i)), &mut self.0);
+            Some(mut i) => {
+                let result = i.next();
+                std::mem::swap(&mut Some(i), &mut self.0);
 
-        if log_enabled!(Level::Trace) {
-            if let Some(v) = &result {
-                trace!("iter: |{}|", v);
+                if log_enabled!(Level::Trace) {
+                    if let Some(v) = &result {
+                        trace!("iter: |{}|", v);
+                    }
+                }
+                result.map(Ok)
             }
         }
-        result.map(Ok)
     }
 }
 
