@@ -55,8 +55,8 @@ impl From<u8> for Byte {
 impl<'b, R: std::io::Read> TokenIter<R> for ByteIter<R> {
     type T = Byte;
 
-    fn unpack(r: R) -> Self {
-        Self(r)
+    fn unpack(r: R) -> Result<Self> {
+        Ok(Self(r))
     }
 }
 
@@ -109,7 +109,7 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = ByteIter::unpack(&mut r);
+        let d = ByteIter::unpack(&mut r).unwrap();
         let i = d.map(|t| t.unwrap());
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
         BytePacker::pack(i, &mut wc).unwrap();

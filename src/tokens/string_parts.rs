@@ -32,22 +32,22 @@ impl<S> StringPartsIter<S>
 where
     S: From<String> + Token,
 {
-    fn new<R>(mut r: R) -> Self
+    fn new<R>(mut r: R) -> Result<Self>
     where
         R: std::io::Read,
     {
         let mut data = Vec::<u8>::new();
         if let Err(e) = r.read_to_end(&mut data) {
-            return Self(Some(Err(Error::new(e))));
+            return Ok(Self(Some(Err(Error::new(e)))));
         }
         match std::str::from_utf8(&data) {
-            Err(e) => Self(Some(Err(Error::new(e)))),
+            Err(e) => Ok(Self(Some(Err(Error::new(e))))),
             Ok(s) => {
                 let mut parts = Vec::<S>::new();
                 for g in s.graphemes(true) {
                     parts.push(S::from(g.to_owned()));
                 }
-                Self(Some(Ok(parts.into_iter())))
+                Ok(Self(Some(Ok(parts.into_iter()))))
             }
         }
     }
@@ -60,7 +60,7 @@ where
 {
     type T = S;
 
-    fn unpack(r: R) -> Self {
+    fn unpack(r: R) -> Result<Self> {
         Self::new(r)
     }
 }

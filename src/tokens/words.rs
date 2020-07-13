@@ -80,7 +80,7 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = WordIter::unpack(&mut r);
+        let d = WordIter::unpack(&mut r).unwrap();
         let i = d.map(|i| match i {
             Err(e) => panic!(e),
             Ok(b) => b,
