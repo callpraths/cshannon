@@ -23,7 +23,7 @@ use std::fmt;
 use std::hash::Hash;
 
 /// A [`Token`] consisting of a single byte of data.
-#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Byte(u8);
 
 /// Provides a method to create a [`Byte`] stream from text.
