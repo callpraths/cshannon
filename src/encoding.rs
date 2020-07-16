@@ -30,7 +30,7 @@ pub mod huffman;
 pub mod shannon;
 
 /// Maps a [`Token`] to a [`Letter`].
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Encoding<T: Token> {
     map: HashMap<T, Letter>,
     alphabet: Alphabet,

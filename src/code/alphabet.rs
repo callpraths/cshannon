@@ -17,7 +17,7 @@ use super::letter::{Letter, Peephole as lPeephole};
 use anyhow::{anyhow, Result};
 
 /// Alphabet is an ordered list of unique Letters.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Alphabet(Vec<Letter>);
 
 impl Alphabet {
