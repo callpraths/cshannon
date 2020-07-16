@@ -144,6 +144,12 @@ impl Letter {
     }
 }
 
+impl Default for Letter {
+    fn default() -> Self {
+        Letter::empty()
+    }
+}
+
 /// Provides deeper access for sibling modules than the public API.
 pub trait Peephole {
     fn validate(&self) -> Result<()>;

@@ -24,8 +24,10 @@ use std::collections::HashMap;
 ///
 /// The model exports certain statistics on input [`Token`] set that are useful
 /// for statistical compression techniques.
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Model<T: Token>(HashMap<T, Stats>);
 
+#[derive(Clone, Debug, Default, PartialEq)]
 struct Stats {
     f: u64,
     p: f64,
