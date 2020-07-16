@@ -27,7 +27,7 @@ use std::fmt;
 use std::hash::Hash;
 
 /// A [`Token`] consisting of a Unicode grapheme cluster.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Grapheme(String);
 
 /// Provides a method to create a [`Grapheme`] stream from text.
@@ -75,7 +75,7 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = GraphemeIter::unpack(&mut r);
+        let d = GraphemeIter::unpack(&mut r).unwrap();
         let i = d.map(|t| t.unwrap());
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
         GraphemePacker::pack(i, &mut wc).unwrap();

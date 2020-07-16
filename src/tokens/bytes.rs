@@ -23,13 +23,15 @@ use std::fmt;
 use std::hash::Hash;
 
 /// A [`Token`] consisting of a single byte of data.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Byte(u8);
 
 /// Provides a method to create a [`Byte`] stream from text.
+#[derive(Clone, Debug)]
 pub struct ByteIter<R: std::io::Read>(R);
 
 /// Provides a method to pack a [`Byte`] stream to text.
+#[derive(Clone, Debug, Default)]
 pub struct BytePacker();
 
 impl std::fmt::Display for Byte {
@@ -53,8 +55,8 @@ impl From<u8> for Byte {
 impl<'b, R: std::io::Read> TokenIter<R> for ByteIter<R> {
     type T = Byte;
 
-    fn unpack(r: R) -> Self {
-        Self(r)
+    fn unpack(r: R) -> Result<Self> {
+        Ok(Self(r))
     }
 }
 
@@ -107,7 +109,7 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = ByteIter::unpack(&mut r);
+        let d = ByteIter::unpack(&mut r).unwrap();
         let i = d.map(|t| t.unwrap());
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
         BytePacker::pack(i, &mut wc).unwrap();

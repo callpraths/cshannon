@@ -32,7 +32,7 @@ use std::hash::Hash;
 ///
 /// Tokenizing to `Word` is lossy because non-word characters (e.g.
 /// punctuations) are lost.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Word(String);
 
 /// Provides a method to create a [`Word`] stream from text.
@@ -80,7 +80,7 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = WordIter::unpack(&mut r);
+        let d = WordIter::unpack(&mut r).unwrap();
         let i = d.map(|i| match i {
             Err(e) => panic!(e),
             Ok(b) => b,

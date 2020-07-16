@@ -22,7 +22,7 @@ use std::fmt;
 /// Useful for unittests against the [`Token`] trait.
 ///
 /// [`Token`]: ../trait.Token.html
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct I32Token(pub i32);
 
 impl fmt::Display for I32Token {

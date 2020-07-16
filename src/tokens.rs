@@ -59,7 +59,7 @@ pub trait Token: Clone + Display + Eq + std::hash::Hash {
 
 /// Provides a method to create a [`Token`] stream from text.
 ///
-/// Errors in reading tokens are reported in-stream.
+/// Errors in reading tokens may be reported upfront or in-stream.
 /// All token implementations return a type that implements this treat from the
 /// associated `unpack` function.
 pub trait TokenIter<R>: std::iter::Iterator<Item = Result<<Self as TokenIter<R>>::T>>
@@ -68,7 +68,9 @@ where
 {
     type T: Token;
 
-    fn unpack(r: R) -> Self;
+    fn unpack(r: R) -> Result<Self>
+    where
+        Self: Sized;
 }
 
 /// Provides a method to pack a [`Token`] stream to text.
@@ -113,7 +115,7 @@ where
     let mut buf = vec![0u8; safe_size];
     r.read_exact(&mut buf)?;
     trace!("read {} bytes to unpack into tokens", buf.len());
-    TI::unpack(Cursor::new(buf)).collect()
+    TI::unpack(Cursor::new(buf)).unwrap().collect()
 }
 
 // TODO: dedup with code::common::pack_u64()

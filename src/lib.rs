@@ -180,11 +180,11 @@ where
 {
     info!("Compressing...");
     let r = BufReader::new(File::open(input_file)?);
-    let tokens = TIter::unpack(r).map(|r| r.unwrap());
+    let tokens = TIter::unpack(r).unwrap().map(|r| r.unwrap());
     let encoding = encoder(model::from(tokens))?;
 
     let r = BufReader::new(File::open(input_file)?);
-    let tokens = TIter::unpack(r).map(|r| r.unwrap());
+    let tokens = TIter::unpack(r).unwrap().map(|r| r.unwrap());
     let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
