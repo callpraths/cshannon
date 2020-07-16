@@ -22,7 +22,7 @@
 
 use super::Encoding;
 use crate::code::Letter;
-use crate::model::Model;
+use crate::model::{Model, ModelKey};
 use crate::tokens::Token;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
@@ -32,7 +32,7 @@ use std::collections::HashMap;
 /// See [package documentation] for details.
 ///
 /// [package documentation]: index.html
-pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
+pub fn new<T: ModelKey>(m: Model<T>) -> Result<Encoding<T>>
 where
     T: Token,
 {

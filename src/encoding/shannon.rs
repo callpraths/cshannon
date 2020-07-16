@@ -32,7 +32,7 @@
 
 use super::Encoding;
 use crate::code::Letter;
-use crate::model::Model;
+use crate::model::{Model, ModelKey};
 use crate::tokens::Token;
 use anyhow::Result;
 use log::{debug, log_enabled, Level};
@@ -43,7 +43,7 @@ use std::collections::HashMap;
 /// See [package documentation] for details.
 ///
 /// [package documentation]: index.html
-pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
+pub fn new<T: ModelKey>(m: Model<T>) -> Result<Encoding<T>>
 where
     T: Token,
 {
@@ -102,13 +102,13 @@ fn e(c: f64, l: u64) -> Letter {
     letter
 }
 
-struct CumulativeProbabilities<'a, T: Token> {
+struct CumulativeProbabilities<'a, T: ModelKey> {
     m: &'a Model<T>,
     tokens: std::vec::IntoIter<T>,
     sum: f64,
 }
 
-impl<'a, T: Token> CumulativeProbabilities<'a, T> {
+impl<'a, T: ModelKey> CumulativeProbabilities<'a, T> {
     pub fn new(m: &'a Model<T>) -> Self {
         Self {
             m,
@@ -118,7 +118,7 @@ impl<'a, T: Token> CumulativeProbabilities<'a, T> {
     }
 }
 
-impl<'a, T: Token> Iterator for CumulativeProbabilities<'a, T> {
+impl<'a, T: ModelKey> Iterator for CumulativeProbabilities<'a, T> {
     type Item = f64;
 
     fn next(&mut self) -> Option<Self::Item> {

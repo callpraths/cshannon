@@ -37,6 +37,7 @@
 //! [`unpack_all`]: fn.unpack_all.html
 //! [words]: words/index.html
 
+use crate::model::ModelKey;
 use anyhow::Result;
 use log::trace;
 use std::convert::TryFrom;
@@ -56,6 +57,8 @@ pub trait Token: Clone + Display + Eq + std::hash::Hash {
     // The number of bits of source text contained in this Token.
     fn bit_count(&self) -> usize;
 }
+
+impl<T: Token> ModelKey for T {}
 
 /// Provides a method to create a [`Token`] stream from text.
 ///
