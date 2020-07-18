@@ -34,7 +34,7 @@ struct Stats {
 }
 
 /// Shorthand of trait bounds required for keys in a [`Model`]
-pub trait ModelKey: Eq + std::hash::Hash + Clone {}
+pub trait ModelKey: Clone + std::fmt::Debug + Eq + std::hash::Hash {}
 
 impl<K: ModelKey> Model<K> {
     /// Frequency of occurrence of a [`ModelKey`].

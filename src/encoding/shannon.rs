@@ -30,10 +30,9 @@
 //!
 //! [Shannon encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
 
-use super::Encoding;
+use super::{Encoding, EncodingKey};
 use crate::code::Letter;
-use crate::model::{Model, ModelKey};
-use crate::tokens::Token;
+use crate::model::Model;
 use anyhow::Result;
 use log::{debug, log_enabled, Level};
 use std::collections::HashMap;
@@ -43,10 +42,7 @@ use std::collections::HashMap;
 /// See [package documentation] for details.
 ///
 /// [package documentation]: index.html
-pub fn new<T: ModelKey>(m: Model<T>) -> Result<Encoding<T>>
-where
-    T: Token,
-{
+pub fn new<K: EncodingKey>(m: Model<K>) -> Result<Encoding<K>> {
     if m.is_empty() {
         return Encoding::new(HashMap::new());
     }
@@ -56,7 +52,7 @@ where
     let lk = fk.map(l);
     let ck = CumulativeProbabilities::new(&m);
     let ek = ck.zip(lk).map(|(c, l)| e(c, l));
-    let map: HashMap<T, Letter> = tk.iter().cloned().zip(ek).collect();
+    let map: HashMap<K, Letter> = tk.iter().cloned().zip(ek).collect();
 
     if log_enabled!(Level::Debug) {
         let tk = m.tokens_sorted();
@@ -66,7 +62,7 @@ where
             let df = m.probability(dt);
             let dl = l(df);
             let de = e(dc, dl);
-            debug!("{}\t{}\t{}\t{}\t{}", dt, df, dl, dc, de);
+            debug!("{:?}\t{}\t{}\t{}\t{}", dt, df, dl, dc, de);
         }
     }
 
@@ -102,13 +98,13 @@ fn e(c: f64, l: u64) -> Letter {
     letter
 }
 
-struct CumulativeProbabilities<'a, T: ModelKey> {
+struct CumulativeProbabilities<'a, T: EncodingKey> {
     m: &'a Model<T>,
     tokens: std::vec::IntoIter<T>,
     sum: f64,
 }
 
-impl<'a, T: ModelKey> CumulativeProbabilities<'a, T> {
+impl<'a, T: EncodingKey> CumulativeProbabilities<'a, T> {
     pub fn new(m: &'a Model<T>) -> Self {
         Self {
             m,
@@ -118,7 +114,7 @@ impl<'a, T: ModelKey> CumulativeProbabilities<'a, T> {
     }
 }
 
-impl<'a, T: ModelKey> Iterator for CumulativeProbabilities<'a, T> {
+impl<'a, T: EncodingKey> Iterator for CumulativeProbabilities<'a, T> {
     type Item = f64;
 
     fn next(&mut self) -> Option<Self::Item> {

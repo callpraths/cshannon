@@ -20,10 +20,9 @@
 //! The generated [`Encoding`] is stable: calling `new` on a [`Model`]
 //! repeatedly yields the same [`Encoding`].
 
-use super::Encoding;
+use super::{Encoding, EncodingKey};
 use crate::code::Letter;
-use crate::model::{Model, ModelKey};
-use crate::tokens::Token;
+use crate::model::Model;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
@@ -32,10 +31,7 @@ use std::collections::HashMap;
 /// See [package documentation] for details.
 ///
 /// [package documentation]: index.html
-pub fn new<T: ModelKey>(m: Model<T>) -> Result<Encoding<T>>
-where
-    T: Token,
-{
+pub fn new<T: EncodingKey>(m: Model<T>) -> Result<Encoding<T>> {
     let mut map = HashMap::new();
     let mut letter_generator = LetterGenerator::new(log2(m.len() as u64))?;
     for t in m.tokens_sorted() {
