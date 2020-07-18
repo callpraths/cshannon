@@ -16,10 +16,9 @@
 //!
 //! [Fano encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
 
-use super::Encoding;
+use super::{Encoding, EncodingKey};
 use crate::code::Letter;
 use crate::model::Model;
-use crate::tokens::Token;
 use anyhow::Result;
 use log::trace;
 use std::collections::HashMap;
@@ -29,10 +28,7 @@ use std::collections::HashMap;
 /// See [package documentation] for details.
 ///
 /// [package documentation]: index.html
-pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
-where
-    T: Token,
-{
+pub fn new<T: EncodingKey>(m: Model<T>) -> Result<Encoding<T>> {
     if m.is_empty() {
         return Encoding::new(HashMap::new());
     }
@@ -51,9 +47,9 @@ where
 }
 
 #[derive(Debug, PartialEq)]
-struct Window<'a, T: Token>(&'a mut [(T, f64)]);
+struct Window<'a, T: EncodingKey>(&'a mut [(T, f64)]);
 
-impl<'a, T: Token> std::fmt::Display for Window<'a, T> {
+impl<'a, T: EncodingKey> std::fmt::Display for Window<'a, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
         write!(f, "[")?;
@@ -61,7 +57,7 @@ impl<'a, T: Token> std::fmt::Display for Window<'a, T> {
             if !first {
                 write!(f, ", ")?;
             }
-            write!(f, "({}, {})", t, c)?;
+            write!(f, "({:?}, {})", t, c)?;
             first = false;
         }
         write!(f, "]")
@@ -69,23 +65,23 @@ impl<'a, T: Token> std::fmt::Display for Window<'a, T> {
 }
 
 #[derive(Debug, PartialEq)]
-enum Refinement<'a, T: Token> {
+enum Refinement<'a, T: EncodingKey> {
     Split(Window<'a, T>, Window<'a, T>),
     Terminal(T),
 }
 
-impl<'a, T: Token> std::fmt::Display for Refinement<'a, T> {
+impl<'a, T: EncodingKey> std::fmt::Display for Refinement<'a, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Refinement::Split(left, right) => write!(f, "Split({}, {})", left, right),
-            Refinement::Terminal(t) => write!(f, "Terminal({})", t),
+            Refinement::Terminal(t) => write!(f, "Terminal({:?})", t),
         }
     }
 }
 
 const LINEAR_SEARCH_THRESHOLD: usize = 6;
 
-impl<'a, T: Token> Window<'a, T> {
+impl<'a, T: EncodingKey> Window<'a, T> {
     pub fn new(data: &'a mut [(T, f64)]) -> Self {
         Self(data)
     }
@@ -147,12 +143,12 @@ impl<'a, T: Token> Window<'a, T> {
     }
 }
 
-enum Frame<'a, T: Token> {
+enum Frame<'a, T: EncodingKey> {
     Left { residual: Window<'a, T> },
     Right,
 }
 
-impl<'a, T: Token> std::fmt::Display for Frame<'a, T> {
+impl<'a, T: EncodingKey> std::fmt::Display for Frame<'a, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Frame::Left { residual } => write!(f, "Left({})", residual),
@@ -161,9 +157,9 @@ impl<'a, T: Token> std::fmt::Display for Frame<'a, T> {
     }
 }
 
-struct CodeIter<'a, T: Token>(Vec<Frame<'a, T>>);
+struct CodeIter<'a, T: EncodingKey>(Vec<Frame<'a, T>>);
 
-impl<'a, T: Token> std::fmt::Display for CodeIter<'a, T> {
+impl<'a, T: EncodingKey> std::fmt::Display for CodeIter<'a, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
         let mut first = true;
@@ -178,7 +174,7 @@ impl<'a, T: Token> std::fmt::Display for CodeIter<'a, T> {
     }
 }
 
-impl<'a, T: Token> Iterator for CodeIter<'a, T> {
+impl<'a, T: EncodingKey> Iterator for CodeIter<'a, T> {
     type Item = (T, Letter);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -189,12 +185,12 @@ impl<'a, T: Token> Iterator for CodeIter<'a, T> {
         };
         self.0.push(Frame::Right);
         let ret = self.descend(residual);
-        trace!(" --> ({}, {})", &ret.0, &ret.1);
+        trace!(" --> ({:?}, {:?})", &ret.0, &ret.1);
         Some(ret)
     }
 }
 
-impl<'a, T: Token> CodeIter<'a, T> {
+impl<'a, T: EncodingKey> CodeIter<'a, T> {
     pub fn new(window: Window<'a, T>) -> Self {
         Self(vec![Frame::Left { residual: window }])
     }

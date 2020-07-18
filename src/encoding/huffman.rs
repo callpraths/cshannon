@@ -16,10 +16,9 @@
 //!
 //! [Huffman encoding]: https://en.wikipedia.org/wiki/Huffman_coding
 
-use super::Encoding;
+use super::{Encoding, EncodingKey};
 use crate::code::Letter;
-use crate::model::Model;
-use crate::tokens::Token;
+use crate::model::{Model, ModelKey};
 use anyhow::Result;
 use std::cell::RefCell;
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd, Reverse};
@@ -32,10 +31,7 @@ use std::rc::Rc;
 /// See [package documentation] for details.
 ///
 /// [package documentation]: index.html
-pub fn new<T>(m: Model<T>) -> Result<Encoding<T>>
-where
-    T: Token,
-{
+pub fn new<T: EncodingKey>(m: Model<T>) -> Result<Encoding<T>> {
     if m.is_empty() {
         return Ok(Encoding::new(HashMap::new())?);
     }
@@ -83,7 +79,7 @@ fn read_letter(leaf: Node) -> Letter {
     letter
 }
 
-fn build_tree<T: Token>(m: &Model<T>) -> HashMap<T, Node> {
+fn build_tree<T: ModelKey>(m: &Model<T>) -> HashMap<T, Node> {
     let leaves = init_leaves(m);
     let mut pq = init_pq(&leaves);
     loop {
@@ -101,7 +97,7 @@ fn build_tree<T: Token>(m: &Model<T>) -> HashMap<T, Node> {
     }
 }
 
-fn init_leaves<T: Token>(m: &Model<T>) -> HashMap<T, Node> {
+fn init_leaves<T: ModelKey>(m: &Model<T>) -> HashMap<T, Node> {
     let mut leaves = HashMap::new();
     m.tokens_sorted().into_iter().for_each(|t| {
         let value = m.frequency(&t);
@@ -110,7 +106,7 @@ fn init_leaves<T: Token>(m: &Model<T>) -> HashMap<T, Node> {
     leaves
 }
 
-fn init_pq<T: Token>(leaves: &HashMap<T, Node>) -> BinaryHeap<Reverse<Node>> {
+fn init_pq<T: ModelKey>(leaves: &HashMap<T, Node>) -> BinaryHeap<Reverse<Node>> {
     let mut pq = BinaryHeap::new();
     leaves.values().for_each(|n| pq.push(Reverse(n.clone())));
     pq

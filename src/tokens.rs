@@ -37,6 +37,7 @@
 //! [`unpack_all`]: fn.unpack_all.html
 //! [words]: words/index.html
 
+use crate::encoding::EncodingKey;
 use anyhow::Result;
 use log::trace;
 use std::convert::TryFrom;
@@ -52,10 +53,12 @@ pub mod words;
 /// A single item in the tokenized stream from a string input.
 ///
 /// Tokens may be used as keys in a [`HashMap`](std::collections::HashMap).
-pub trait Token: Clone + Display + Eq + std::hash::Hash {
+pub trait Token: Clone + std::fmt::Debug + Display + Eq + std::hash::Hash {
     // The number of bits of source text contained in this Token.
     fn bit_count(&self) -> usize;
 }
+
+impl<T: Token> EncodingKey for T {}
 
 /// Provides a method to create a [`Token`] stream from text.
 ///
