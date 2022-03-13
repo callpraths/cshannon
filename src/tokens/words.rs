@@ -82,7 +82,7 @@ About my neck was hung.
         let mut r = Cursor::new(TEXT);
         let d = WordIter::unpack(&mut r).unwrap();
         let i = d.map(|i| match i {
-            Err(e) => panic!(e),
+            Err(e) => panic!("{}", e),
             Ok(b) => b,
         });
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
