@@ -86,7 +86,6 @@ impl Iterator for LetterGenerator {
     }
 }
 
-// TODO: rename
 fn log2(n: u64) -> u64 {
     let max = std::mem::size_of::<u64>() as u64 * 8;
     let zeroes = n.leading_zeros() as u64;
