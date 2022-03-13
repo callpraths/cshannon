@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #![feature(associated_type_bounds)]
-#![feature(seek_convenience)]
 #![feature(test)]
 
 //! A library of some early compression algorithms based on replacement schemes.

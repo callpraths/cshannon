@@ -38,7 +38,7 @@ pub fn new<T: EncodingKey>(m: Model<T>) -> Result<Encoding<T>> {
         match letter_generator.next() {
             // Programming error, since bit_count should guarantee we never run
             // out of letters.
-            None => panic!("Ran out of letters".to_owned()),
+            None => panic!("Ran out of letters"),
             Some(l) => {
                 map.insert(t, l);
             }
