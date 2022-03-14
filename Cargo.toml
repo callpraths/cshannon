@@ -33,5 +33,5 @@ env_logger = "0.7.1"
 log = { version = "0.4.8", features = ["max_level_trace", "release_max_level_info"] }
 owning_ref = "0.4.1"
 tempfile = "3.1.0"
-test_bin = "0.3.0"
+test_bin = "0.4.0"
 unicode-segmentation = "1.6.0"
