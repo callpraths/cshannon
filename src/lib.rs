@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#![feature(associated_type_bounds)]
 #![feature(test)]
 
 //! A library of some early compression algorithms based on replacement schemes.
@@ -348,8 +347,7 @@ About my neck was hung.
 
     fn print_error_and_bail<T>(r: Result<T>) {
         if let Err(e) = r {
-            format!("Error: {}", e);
-            format!("Backtrace: {}", e.backtrace());
+            eprintln!("Backtrace: {}", e.backtrace());
             panic!("Error: {}", e);
         }
     }

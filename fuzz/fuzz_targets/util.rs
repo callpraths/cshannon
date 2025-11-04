@@ -46,8 +46,7 @@ pub fn roundtrip(tokenizer: &str, encoding: &str, data: &[u8]) {
 
 fn print_error_and_bail<T>(r: Result<T>) {
     if let Err(e) = r {
-        format!("Error: {}", e);
-        format!("Backtrace: {}", e.backtrace());
+        eprintln!("Backtrace: {}", e.backtrace());
         panic!("Error: {}", e);
     }
 }
