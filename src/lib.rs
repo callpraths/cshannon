@@ -83,10 +83,13 @@
 //! module.
 
 pub mod code;
-pub mod encoding;
 pub mod model;
 pub mod tokens;
+
+mod encoding;
 mod util;
+
+pub use crate::encoding::EncodingScheme;
 
 use code::Letter;
 use tokens::bytes::{Byte, ByteIter, BytePacker};
@@ -101,7 +104,6 @@ use std::fs::File;
 use std::io::Seek;
 use std::io::{BufReader, BufWriter, Cursor};
 
-pub use crate::encoding::EncodingScheme;
 use crate::encoding::{encoder_constructor, EncodingConstructor};
 
 pub enum Command {

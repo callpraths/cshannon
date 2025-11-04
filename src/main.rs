@@ -16,7 +16,7 @@ extern crate cshannon;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use cshannon::{encoding::EncodingScheme, Command, CompressArgs, DecompressArgs};
+use cshannon::{Command, CompressArgs, DecompressArgs, EncodingScheme};
 use env_logger::Env;
 
 #[derive(Parser)]
