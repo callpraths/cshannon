@@ -31,13 +31,14 @@
 //! The easiest way to use cshannon library is:
 //! ```
 //! use cshannon::{Args, Command, CompressArgs, EncodingScheme, run};
+//! use std::path::Path;
 //!
 //! run(Args{
 //!     command: Command::Compress(CompressArgs{
 //!         encoding_scheme: EncodingScheme::Fano
 //!     }),
-//!     input_file: "/path/to/input_file",
-//!     output_file: "/path/to/output_file",
+//!     input_file: &Path::new("/path/to/input_file"),
+//!     output_file: &Path::new("/path/to/output_file"),
 //!     tokenizer: "byte",
 //! });
 //! ```
@@ -103,6 +104,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Seek;
 use std::io::{BufReader, BufWriter, Cursor};
+use std::path::Path;
 
 use crate::encoding::{encoder_constructor, EncodingConstructor};
 
@@ -119,8 +121,8 @@ pub struct DecompressArgs {}
 
 pub struct Args<'a> {
     pub command: Command,
-    pub input_file: &'a str,
-    pub output_file: &'a str,
+    pub input_file: &'a Path,
+    pub output_file: &'a Path,
     pub tokenizer: &'a str,
 }
 
@@ -167,8 +169,8 @@ pub fn run(args: Args) -> Result<()> {
 /// Document me.
 /// TODO: Convert to use AsRef<Path>
 pub fn compress<T, TIter, TPacker>(
-    input_file: &str,
-    output_file: &str,
+    input_file: &Path,
+    output_file: &Path,
     encoder: EncodingConstructor<T>,
 ) -> Result<()>
 where
@@ -194,7 +196,7 @@ where
 
 /// Document me.
 /// TODO: Convert to use AsRef<Path>
-pub fn decompress<T, TIter, TAllIter, TPacker>(input_file: &str, output_file: &str) -> Result<()>
+pub fn decompress<T, TIter, TAllIter, TPacker>(input_file: &Path, output_file: &Path) -> Result<()>
 where
     T: Token,
     TIter: TokenIter<BufReader<File>, T = T>,
@@ -332,14 +334,14 @@ About my neck was hung.
         fs::write(&input_file, data).unwrap();
         print_error_and_bail(run(Args {
             command: Command::Compress(CompressArgs { encoding_scheme }),
-            input_file: input_file.to_str().unwrap(),
-            output_file: compressed_file.to_str().unwrap(),
+            input_file: &input_file.as_path(),
+            output_file: &compressed_file.as_path(),
             tokenizer: tokenizer,
         }));
         print_error_and_bail(run(Args {
             command: Command::Decompress(DecompressArgs {}),
-            input_file: compressed_file.to_str().unwrap(),
-            output_file: decompressed_file.to_str().unwrap(),
+            input_file: &compressed_file.as_path(),
+            output_file: &decompressed_file.as_path(),
             tokenizer: tokenizer,
         }));
         let decompressed = fs::read(&decompressed_file).unwrap();

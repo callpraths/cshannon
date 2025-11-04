@@ -14,6 +14,8 @@
 
 extern crate cshannon;
 
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use cshannon::{Command, CompressArgs, DecompressArgs, EncodingScheme};
@@ -31,10 +33,10 @@ struct Cli {
     encoding: String,
     /// Input file to (de)compress.
     #[arg(short, long)]
-    input_file: String,
+    input_file: PathBuf,
     /// Output file to (de)compress into.
     #[arg(short, long)]
-    output_file: String,
+    output_file: PathBuf,
 
     #[command(subcommand)]
     command: Commands,
