@@ -16,6 +16,7 @@ extern crate cshannon;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use cshannon::{encoding::EncodingScheme, Command, CompressArgs, DecompressArgs};
 use env_logger::Env;
 
 #[derive(Parser)]
@@ -51,8 +52,10 @@ fn main() -> Result<()> {
     env_logger::Builder::from_env(Env::default().default_filter_or("warn")).init();
     let cli = Cli::parse();
     let command = match &cli.command {
-        Commands::Compress => "compress",
-        Commands::Decompress => "decompress",
+        Commands::Compress => Command::Compress(CompressArgs {
+            encoding_scheme: to_encoding_scheme(&cli.encoding),
+        }),
+        Commands::Decompress => Command::Decompress(DecompressArgs {}),
     };
 
     // Safe to use unwrap() because these args are `required`.
@@ -61,8 +64,18 @@ fn main() -> Result<()> {
         input_file: &cli.input_file,
         output_file: &cli.output_file,
         tokenizer: &cli.tokenizer,
-        encoding: &cli.encoding,
     })?;
     println!("Success");
     Ok(())
+}
+
+// Migration kludge
+fn to_encoding_scheme(encoding: &str) -> EncodingScheme {
+    match encoding {
+        "balanced_tree" => EncodingScheme::BalancedTree,
+        "fano" => EncodingScheme::Fano,
+        "shannon" => EncodingScheme::Shannon,
+        "huffman" => EncodingScheme::Huffman,
+        _ => panic!("Unsupported encoding scheme {}", encoding),
+    }
 }

@@ -20,7 +20,7 @@
 //! [balanced_tree], [shannon], [fano], or [huffman].
 
 use crate::code::{Alphabet, Letter};
-use crate::model::ModelKey;
+use crate::model::{Model, ModelKey};
 use anyhow::Result;
 use log::{debug, log_enabled, Level};
 use std::collections::HashMap;
@@ -29,6 +29,57 @@ pub mod balanced_tree;
 pub mod fano;
 pub mod huffman;
 pub mod shannon;
+
+/// Encoding shcemes supported by this library.
+pub enum EncodingScheme {
+    /// Create a new balanced tree [`Encoding`].
+    ///
+    /// All letters in this encoding are fixed width bit strings. The smallest width
+    /// necessary to generate the required number of [`Letter`]s is used.
+    ///
+    /// The generated [`Encoding`] is stable: calling `new` on a [`Model`]
+    /// repeatedly yields the same [`Encoding`].
+    BalancedTree,
+    /// Create a new [Fano encoding].
+    ///
+    /// [Fano encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
+    Fano,
+    // Create a new [Huffman encoding].
+    //
+    // [Huffman encoding]: https://en.wikipedia.org/wiki/Huffman_coding
+    Huffman,
+    /// Create a new [Shannon encoding].
+    ///
+    /// The Shannon encoding scheme is defined thus:
+    ///
+    /// Let the tokens, sorted in decreasing order of frequency be
+    /// `t1, t2, t3 ...`
+    ///
+    /// Let the probability of occurrence of the Tokens be `f1, f2, f3 ...`
+    ///
+    /// Define the numbers `l1, l2, l3 ...` such that `lk` = `ceil(log2(1/fk))`
+    ///
+    /// Let the (computed) cumulative proportions be `c1, c2, c3 ...`
+    ///
+    /// Then, the code is `e1, e2, e3 ...`
+    /// such that `ek` = first `lk` bits of the binary expansion of `Fk`.
+    ///
+    /// [Shannon encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
+    Shannon,
+}
+
+pub type EncodingConstructor<T> = fn(Model<T>) -> Result<Encoding<T>>;
+
+/// Return the type-appropriate appropriate constructor function for the given
+/// encoding scheme.
+pub fn encoder_constructor<K: EncodingKey>(scheme: EncodingScheme) -> EncodingConstructor<K> {
+    match scheme {
+        EncodingScheme::BalancedTree => balanced_tree::new::<K>,
+        EncodingScheme::Fano => fano::new::<K>,
+        EncodingScheme::Huffman => huffman::new::<K>,
+        EncodingScheme::Shannon => shannon::new::<K>,
+    }
+}
 
 /// Shorthand for trait bounds required for keys in an [`Encoding`].
 pub trait EncodingKey: Clone + std::fmt::Debug + Eq + std::hash::Hash {}

@@ -30,14 +30,15 @@
 //!
 //! The easiest way to use cshannon library is:
 //! ```
-//! use cshannon::{Args, run};
+//! use cshannon::{Args, Command, CompressArgs, EncodingScheme, run};
 //!
 //! run(Args{
-//!     command: "compress",
+//!     command: Command::Compress(CompressArgs{
+//!         encoding_scheme: EncodingScheme::Fano
+//!     }),
 //!     input_file: "/path/to/input_file",
 //!     output_file: "/path/to/output_file",
 //!     tokenizer: "byte",
-//!     encoding: "fano",
 //! });
 //! ```
 //!
@@ -88,9 +89,6 @@ pub mod tokens;
 mod util;
 
 use code::Letter;
-use encoding::Encoding;
-use encoding::{balanced_tree, fano, huffman, shannon};
-use model::Model;
 use tokens::bytes::{Byte, ByteIter, BytePacker};
 use tokens::graphemes::{Grapheme, GraphemeIter, GraphemePacker};
 use tokens::words::{Word, WordIter, WordPacker};
@@ -103,35 +101,48 @@ use std::fs::File;
 use std::io::Seek;
 use std::io::{BufReader, BufWriter, Cursor};
 
+pub use crate::encoding::EncodingScheme;
+use crate::encoding::{encoder_constructor, EncodingConstructor};
+
+pub enum Command {
+    Compress(CompressArgs),
+    Decompress(DecompressArgs),
+}
+
+pub struct CompressArgs {
+    pub encoding_scheme: EncodingScheme,
+}
+
+pub struct DecompressArgs {}
+
 pub struct Args<'a> {
-    pub command: &'a str,
+    pub command: Command,
     pub input_file: &'a str,
     pub output_file: &'a str,
-    pub encoding: &'a str,
     pub tokenizer: &'a str,
 }
 
 pub fn run(args: Args) -> Result<()> {
     match args.command {
-        "compress" => match args.tokenizer {
+        Command::Compress(command_args) => match args.tokenizer {
             "byte" => compress::<Byte, ByteIter<BufReader<File>>, BytePacker>(
                 args.input_file,
                 args.output_file,
-                encoder(args.encoding)?,
+                encoder_constructor(command_args.encoding_scheme),
             ),
             "grapheme" => compress::<Grapheme, GraphemeIter, GraphemePacker>(
                 args.input_file,
                 args.output_file,
-                encoder(args.encoding)?,
+                encoder_constructor(command_args.encoding_scheme),
             ),
             "word" => compress::<Word, WordIter, WordPacker>(
                 args.input_file,
                 args.output_file,
-                encoder(args.encoding)?,
+                encoder_constructor(command_args.encoding_scheme),
             ),
             _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
         },
-        "decompress" => match args.tokenizer {
+        Command::Decompress(_) => match args.tokenizer {
             "byte" => {
                 decompress::<Byte, ByteIter<BufReader<File>>, ByteIter<Cursor<Vec<u8>>>, BytePacker>(
                     args.input_file,
@@ -148,19 +159,6 @@ pub fn run(args: Args) -> Result<()> {
             ),
             _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
         },
-        name => Err(anyhow!("unsupported command {}", name)),
-    }
-}
-
-type Encoder<T> = fn(Model<T>) -> Result<Encoding<T>>;
-
-fn encoder<T: Token>(encoding: &str) -> Result<Encoder<T>> {
-    match encoding {
-        "balanced_tree" => Ok(balanced_tree::new::<T>),
-        "shannon" => Ok(shannon::new::<T>),
-        "fano" => Ok(fano::new::<T>),
-        "huffman" => Ok(huffman::new::<T>),
-        _ => Err(anyhow!("invalid encoding {}", encoding)),
     }
 }
 
@@ -169,7 +167,7 @@ fn encoder<T: Token>(encoding: &str) -> Result<Encoder<T>> {
 pub fn compress<T, TIter, TPacker>(
     input_file: &str,
     output_file: &str,
-    encoder: Encoder<T>,
+    encoder: EncodingConstructor<T>,
 ) -> Result<()>
 where
     T: Token,
@@ -285,7 +283,7 @@ mod benchmarks {
 
     extern crate test;
 
-    use super::{run, Args};
+    use super::*;
     use crate::util::testing;
     use anyhow::Result;
     use std::fs;
@@ -301,25 +299,28 @@ About my neck was hung.
 
     #[bench]
     fn bytes_balanced_tree(b: &mut Bencher) {
-        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+        b.iter(|| roundtrip("byte", EncodingScheme::BalancedTree, TEXT));
     }
 
     #[bench]
     fn bytes_shannon(b: &mut Bencher) {
-        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+        // TODO(FIXME): Should be EncodingScheme::Shannon
+        b.iter(|| roundtrip("byte", EncodingScheme::BalancedTree, TEXT));
     }
 
     #[bench]
     fn bytes_fano(b: &mut Bencher) {
-        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+        // TODO(FIXME): Should be EncodingScheme::Fano
+        b.iter(|| roundtrip("byte", EncodingScheme::BalancedTree, TEXT));
     }
 
     #[bench]
     fn bytes_huffman(b: &mut Bencher) {
-        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+        // TODO(FIXME): Should be EncodingScheme::Huffman
+        b.iter(|| roundtrip("byte", EncodingScheme::BalancedTree, TEXT));
     }
 
-    fn roundtrip(tokenizer: &str, encoding: &str, data: &str) {
+    fn roundtrip(tokenizer: &str, encoding_scheme: EncodingScheme, data: &str) {
         testing::init_logs_for_test();
         let work_dir = tempfile::tempdir().unwrap();
         let input_file = work_dir.path().join("input.txt");
@@ -328,18 +329,16 @@ About my neck was hung.
 
         fs::write(&input_file, data).unwrap();
         print_error_and_bail(run(Args {
-            command: "compress",
+            command: Command::Compress(CompressArgs { encoding_scheme }),
             input_file: input_file.to_str().unwrap(),
             output_file: compressed_file.to_str().unwrap(),
             tokenizer: tokenizer,
-            encoding: encoding,
         }));
         print_error_and_bail(run(Args {
-            command: "decompress",
+            command: Command::Decompress(DecompressArgs {}),
             input_file: compressed_file.to_str().unwrap(),
             output_file: decompressed_file.to_str().unwrap(),
             tokenizer: tokenizer,
-            encoding: encoding,
         }));
         let decompressed = fs::read(&decompressed_file).unwrap();
         assert_eq!(data.as_bytes(), &decompressed[..]);

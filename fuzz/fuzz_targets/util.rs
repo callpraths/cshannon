@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use anyhow::Result;
-use cshannon::{run, Args};
+use cshannon::{run, Args, Command, CompressArgs, DecompressArgs, EncodingScheme};
 use std::fs;
 use std::sync::Once;
 use tempfile;
@@ -27,18 +27,18 @@ pub fn roundtrip(tokenizer: &str, encoding: &str, data: &[u8]) {
 
     fs::write(&input_file, data).unwrap();
     print_error_and_bail(run(Args {
-        command: "compress",
+        command: Command::Compress(CompressArgs {
+            encoding_scheme: to_encoding_scheme(encoding),
+        }),
         input_file: input_file.to_str().unwrap(),
         output_file: compressed_file.to_str().unwrap(),
         tokenizer: tokenizer,
-        encoding: encoding,
     }));
     print_error_and_bail(run(Args {
-        command: "decompress",
+        command: Command::Decompress(DecompressArgs {}),
         input_file: compressed_file.to_str().unwrap(),
         output_file: decompressed_file.to_str().unwrap(),
         tokenizer: tokenizer,
-        encoding: encoding,
     }));
     let decompressed = fs::read(&decompressed_file).unwrap();
     assert_eq!(data, &decompressed[..]);
@@ -55,4 +55,15 @@ static LOG_INIT: Once = Once::new();
 
 fn init_logs_for_test() {
     LOG_INIT.call_once(|| env_logger::init());
+}
+
+// Migration kludge
+fn to_encoding_scheme(encoding: &str) -> EncodingScheme {
+    match encoding {
+        "balanced_tree" => EncodingScheme::BalancedTree,
+        "fano" => EncodingScheme::Fano,
+        "shannon" => EncodingScheme::Shannon,
+        "huffman" => EncodingScheme::Huffman,
+        _ => panic!("Unsupported encoding scheme {}", encoding),
+    }
 }
