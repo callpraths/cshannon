@@ -129,17 +129,17 @@ pub struct Args<'a> {
 pub fn run(args: Args) -> Result<()> {
     match args.command {
         Command::Compress(command_args) => match args.tokenizer {
-            "byte" => compress::<Byte, ByteIter<BufReader<File>>, BytePacker>(
+            "byte" => compress::<Byte, ByteIter<BufReader<File>>>(
                 args.input_file,
                 args.output_file,
                 encoder_constructor(command_args.encoding_scheme),
             ),
-            "grapheme" => compress::<Grapheme, GraphemeIter, GraphemePacker>(
+            "grapheme" => compress::<Grapheme, GraphemeIter>(
                 args.input_file,
                 args.output_file,
                 encoder_constructor(command_args.encoding_scheme),
             ),
-            "word" => compress::<Word, WordIter, WordPacker>(
+            "word" => compress::<Word, WordIter>(
                 args.input_file,
                 args.output_file,
                 encoder_constructor(command_args.encoding_scheme),
@@ -168,7 +168,7 @@ pub fn run(args: Args) -> Result<()> {
 
 /// Document me.
 /// TODO: Convert to use AsRef<Path>
-pub fn compress<T, TIter, TPacker>(
+pub fn compress<T, TIter>(
     input_file: &Path,
     output_file: &Path,
     encoder: EncodingConstructor<T>,
@@ -176,7 +176,6 @@ pub fn compress<T, TIter, TPacker>(
 where
     T: Token,
     TIter: TokenIter<BufReader<File>, T = T>,
-    TPacker: TokenPacker<T = T>,
 {
     info!("Compressing...");
     let r = BufReader::new(File::open(input_file)?);
@@ -188,7 +187,7 @@ where
     let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
-    crate::tokens::pack_all::<_, _, TPacker>(encoding.tokens(), &mut w)?;
+    crate::tokens::pack_all(encoding.tokens(), &mut w)?;
     encoding.alphabet().clone().pack(&mut w)?;
     crate::code::pack(code_text, &mut w)?;
     Ok(())

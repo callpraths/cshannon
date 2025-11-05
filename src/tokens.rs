@@ -54,7 +54,7 @@ pub mod words;
 /// Tokens may be used as keys in a [`HashMap`](std::collections::HashMap).
 pub trait Token: Clone + std::fmt::Debug + Display + Eq + std::hash::Hash {
     type Tokenizer;
-    type Packer;
+    type Packer: TokenPacker<T = Self>;
 
     // The number of bits of source text contained in this Token.
     fn bit_count(&self) -> usize;
@@ -88,17 +88,16 @@ pub trait TokenPacker {
 /// Packs a vector of tokens prefixed with the length of the vector.
 ///
 /// See [`unpack_all()`] for the reverse operation.
-pub fn pack_all<W, T, TP>(tokens: Vec<T>, w: &mut W) -> Result<()>
+pub fn pack_all<W, T>(tokens: Vec<T>, w: &mut W) -> Result<()>
 where
     W: std::io::Write,
     T: Token,
-    TP: TokenPacker<T = T>,
 {
     // FIXME: This assumes that tokens are at least a byte wide.
     let size = tokens.iter().fold(0, |sum, t| sum + t.bit_count()) / 8;
     w.write_all(&pack_u64(size as u64))?;
     trace!("wrote size {} as {:?}", size, pack_u64(size as u64));
-    TP::pack(tokens.into_iter(), w)?;
+    T::Packer::pack(tokens.into_iter(), w)?;
     Ok(())
 }
 
