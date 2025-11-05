@@ -90,8 +90,8 @@ pub mod tokens;
 mod encoding;
 mod util;
 
-use crate::encoding::new_encoder;
 pub use crate::encoding::EncodingScheme;
+use crate::encoding::{new_encoder, Encoding};
 
 use code::Letter;
 use tokens::bytes::Byte;
@@ -100,7 +100,7 @@ use tokens::words::Word;
 use tokens::{Token, TokenPacker, Tokenizer};
 
 use anyhow::{anyhow, Result};
-use log::{debug, info, log_enabled, trace, Level};
+use log::{info, trace};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Seek;
@@ -171,8 +171,7 @@ pub fn compress<T: Token>(
     let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
-    crate::tokens::pack_all(encoding.tokens(), &mut w)?;
-    encoding.alphabet().clone().pack(&mut w)?;
+    encoding.pack(&mut w)?;
     crate::code::pack(code_text, &mut w)?;
     Ok(())
 }
@@ -184,34 +183,11 @@ pub fn decompress<T: Token>(input_file: &Path, output_file: &Path) -> Result<()>
     let mut r = File::open(input_file)?;
     trace!("File position at the start: {:?}", r.stream_position());
     let mut br = BufReader::new(r);
-    let tokens = crate::tokens::unpack_all(&mut br)?;
-    trace!(
-        "File position after unpacking token set: {:?}",
-        br.stream_position()
-    );
 
-    let alphabet = crate::code::Alphabet::unpack(&mut br)?;
-    trace!(
-        "File position after unpacking alphabet set: {:?}",
-        br.stream_position()
-    );
-    let letters = alphabet.letters();
+    let encoding: Encoding<T> = Encoding::unpack(&mut br).unwrap();
+    let map = encoding.reverse_map();
 
-    if letters.len() != tokens.len() {
-        return Err(anyhow!(
-            "Extracted letter count {} does not match token count {}",
-            letters.len(),
-            tokens.len(),
-        ));
-    }
-    let map = letters
-        .iter()
-        .cloned()
-        .zip(tokens.into_iter())
-        .collect::<HashMap<Letter, T>>();
-    log_decoder_ring(&map);
-
-    let coded_text = crate::code::parse(&alphabet, br)?.map(|r| r.unwrap());
+    let coded_text = crate::code::parse(&encoding.alphabet(), br)?.map(|r| r.unwrap());
     let tokens = decode(&map, coded_text).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
@@ -234,7 +210,7 @@ where
 }
 
 fn decode<'a, T, CS: 'a>(
-    encoding: &'a HashMap<Letter, T>,
+    encoding: &'a HashMap<&'a Letter, &'a T>,
     input: CS,
 ) -> impl Iterator<Item = Result<T>> + 'a
 where
@@ -245,16 +221,6 @@ where
         Some(t) => Ok((*t).clone()),
         None => Err(anyhow!("no encoding for letter {}", l)),
     })
-}
-
-fn log_decoder_ring<T: Token>(m: &HashMap<Letter, T>) {
-    if !log_enabled!(Level::Debug) {
-        return;
-    }
-    debug!("Decoder ring:");
-    for (l, t) in m.iter() {
-        debug!("  |{}|: |{}|", l, t);
-    }
 }
 
 mod benchmarks {
