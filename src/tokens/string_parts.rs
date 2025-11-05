@@ -14,7 +14,7 @@
 
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Token, TokenIter, TokenPacker};
+use crate::tokens::{Token, TokenPacker};
 use unicode_segmentation::{self, UnicodeSegmentation};
 
 use anyhow::{Error, Result};
@@ -31,7 +31,7 @@ impl<S> StringPartsIter<S>
 where
     S: From<String> + Token,
 {
-    fn new<R>(mut r: R) -> Result<Self>
+    pub fn new<R>(mut r: R) -> Result<Self>
     where
         R: std::io::Read,
     {
@@ -43,18 +43,6 @@ where
             parts.push(S::from(g.to_owned()));
         }
         Ok(Self(Some(parts.into_iter())))
-    }
-}
-
-impl<'a, S, R> TokenIter<R> for StringPartsIter<S>
-where
-    S: From<String> + Token,
-    R: std::io::Read,
-{
-    type T = S;
-
-    fn unpack(r: R) -> Result<Self> {
-        Self::new(r)
     }
 }
 

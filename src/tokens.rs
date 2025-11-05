@@ -67,22 +67,6 @@ pub trait Tokenizer {
     fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>>;
 }
 
-/// Provides a method to create a [`Token`] stream from text.
-///
-/// Errors in reading tokens may be reported upfront or in-stream.
-/// All token implementations return a type that implements this treat from the
-/// associated `unpack` function.
-pub trait TokenIter<R>: std::iter::Iterator<Item = Result<<Self as TokenIter<R>>::T>>
-where
-    R: std::io::Read,
-{
-    type T: Token;
-
-    fn unpack(r: R) -> Result<Self>
-    where
-        Self: Sized;
-}
-
 /// Provides a method to pack a [`Token`] stream to text.
 pub trait TokenPacker {
     type T: Token;

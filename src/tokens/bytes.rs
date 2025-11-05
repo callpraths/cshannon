@@ -16,7 +16,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Token, TokenIter, TokenPacker, Tokenizer};
+use crate::tokens::{Token, TokenPacker, Tokenizer};
 use anyhow::{Error, Result};
 use std::convert::From;
 use std::fmt;
@@ -25,21 +25,6 @@ use std::hash::Hash;
 /// A [`Token`] consisting of a single byte of data.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Byte(u8);
-
-pub struct ByteTokenizer;
-
-impl Tokenizer for ByteTokenizer {
-    type T = Byte;
-    type Iter<R: std::io::Read> = ByteIter<R>;
-
-    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
-        ByteIter::unpack(r)
-    }
-}
-
-/// Provides a method to create a [`Byte`] stream from text.
-#[derive(Clone, Debug)]
-pub struct ByteIter<R: std::io::Read>(R);
 
 impl std::fmt::Display for Byte {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -62,13 +47,20 @@ impl From<u8> for Byte {
     }
 }
 
-impl<'b, R: std::io::Read> TokenIter<R> for ByteIter<R> {
-    type T = Byte;
+pub struct ByteTokenizer;
 
-    fn unpack(r: R) -> Result<Self> {
-        Ok(Self(r))
+impl Tokenizer for ByteTokenizer {
+    type T = Byte;
+    type Iter<R: std::io::Read> = ByteIter<R>;
+
+    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
+        Ok(ByteIter(r))
     }
 }
+
+/// Provides a method to create a [`Byte`] stream from text.
+#[derive(Clone, Debug)]
+pub struct ByteIter<R: std::io::Read>(R);
 
 impl<R: std::io::Read> std::iter::Iterator for ByteIter<R> {
     type Item = Result<Byte>;
@@ -120,7 +112,7 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = ByteIter::unpack(&mut r).unwrap();
+        let d = ByteTokenizer::tokenize(&mut r).unwrap();
         let i = d.map(|t| t.unwrap());
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
         BytePacker::pack(i, &mut wc).unwrap();

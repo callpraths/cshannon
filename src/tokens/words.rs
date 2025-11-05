@@ -22,7 +22,7 @@
 //! [Unicode words]: http://www.unicode.org/reports/tr29/
 
 use super::string_parts;
-use crate::tokens::{Token, TokenIter, Tokenizer};
+use crate::tokens::{Token, Tokenizer};
 
 use anyhow::Result;
 use std::convert::{From, Into};
@@ -35,23 +35,6 @@ use std::hash::Hash;
 /// punctuations) are lost.
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Word(String);
-
-/// Provides a method to create a [`Word`] stream from text.
-pub type WordIter = string_parts::StringPartsIter<Word>;
-
-pub struct WordTokenizer;
-
-impl Tokenizer for WordTokenizer {
-    type T = Word;
-    type Iter<R: std::io::Read> = WordIter;
-
-    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
-        WordIter::unpack(r)
-    }
-}
-
-/// Provides a method to pack a [`Word`] stream to text.
-pub type WordPacker = string_parts::StringPartsPacker<Word>;
 
 impl From<String> for Word {
     fn from(s: String) -> Self {
@@ -80,10 +63,27 @@ impl Token for Word {
     }
 }
 
+pub struct WordTokenizer;
+
+impl Tokenizer for WordTokenizer {
+    type T = Word;
+    type Iter<R: std::io::Read> = WordIter;
+
+    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
+        WordIter::new(r)
+    }
+}
+
+/// Provides a method to create a [`Word`] stream from text.
+pub type WordIter = string_parts::StringPartsIter<Word>;
+
+/// Provides a method to pack a [`Word`] stream to text.
+pub type WordPacker = string_parts::StringPartsPacker<Word>;
+
 #[cfg(test)]
 mod tests {
-    use super::super::{TokenIter, TokenPacker};
     use super::*;
+    use crate::tokens::TokenPacker;
     use std::io::Cursor;
 
     const TEXT: &str = "
@@ -95,7 +95,7 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = WordIter::unpack(&mut r).unwrap();
+        let d = WordTokenizer::tokenize(&mut r).unwrap();
         let i = d.map(|i| match i {
             Err(e) => panic!("{}", e),
             Ok(b) => b,

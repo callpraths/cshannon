@@ -14,7 +14,7 @@
 
 //! Contains Token implementations intended to help write unit tests.
 
-use crate::tokens::{TokenIter, TokenPacker, Tokenizer};
+use crate::tokens::{TokenPacker, Tokenizer};
 
 use super::Token;
 use anyhow::Result;
@@ -50,19 +50,11 @@ impl Tokenizer for I32Tokenizer {
     type Iter<R: std::io::Read> = I32TokenIter<R>;
 
     fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
-        I32TokenIter::unpack(r)
+        Ok(I32TokenIter(r))
     }
 }
 
 pub struct I32TokenIter<R: std::io::Read>(R);
-
-impl<'b, R: std::io::Read> TokenIter<R> for I32TokenIter<R> {
-    type T = I32Token;
-
-    fn unpack(r: R) -> Result<Self> {
-        Ok(Self(r))
-    }
-}
 
 impl<R: std::io::Read> std::iter::Iterator for I32TokenIter<R> {
     type Item = Result<I32Token>;
