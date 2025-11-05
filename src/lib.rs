@@ -206,7 +206,7 @@ where
     let mut r = File::open(input_file)?;
     trace!("File position at the start: {:?}", r.stream_position());
     let mut br = BufReader::new(r);
-    let tokens = crate::tokens::unpack_all::<_, _, TAllIter>(&mut br)?;
+    let tokens = crate::tokens::unpack_all(&mut br)?;
     trace!(
         "File position after unpacking token set: {:?}",
         br.stream_position()

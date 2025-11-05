@@ -16,7 +16,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Token, TokenIter, TokenPacker};
+use crate::tokens::{Token, TokenIter, TokenPacker, Tokenizer};
 use anyhow::{Error, Result};
 use std::convert::From;
 use std::fmt;
@@ -28,8 +28,11 @@ pub struct Byte(u8);
 
 pub struct ByteTokenizer;
 
-impl ByteTokenizer {
-    pub fn tokenize<R: std::io::Read>(r: R) -> Result<ByteIter<R>> {
+impl Tokenizer for ByteTokenizer {
+    type T = Byte;
+    type Iter<R: std::io::Read> = ByteIter<R>;
+
+    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
         ByteIter::unpack(r)
     }
 }

@@ -20,7 +20,7 @@
 //! [Unicode grapheme clusters]: http://www.unicode.org/reports/tr29/
 
 use super::string_parts;
-use crate::tokens::{Token, TokenIter};
+use crate::tokens::{Token, TokenIter, Tokenizer};
 
 use anyhow::Result;
 use std::convert::{From, Into};
@@ -33,8 +33,11 @@ pub struct Grapheme(String);
 
 pub struct GraphemeTokenizer;
 
-impl GraphemeTokenizer {
-    pub fn tokenize<R: std::io::Read>(r: R) -> Result<GraphemeIter> {
+impl Tokenizer for GraphemeTokenizer {
+    type T = Grapheme;
+    type Iter<R: std::io::Read> = GraphemeIter;
+
+    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
         GraphemeIter::unpack(r)
     }
 }

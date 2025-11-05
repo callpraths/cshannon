@@ -53,11 +53,18 @@ pub mod words;
 ///
 /// Tokens may be used as keys in a [`HashMap`](std::collections::HashMap).
 pub trait Token: Clone + std::fmt::Debug + Display + Eq + std::hash::Hash {
-    type Tokenizer;
+    type Tokenizer: Tokenizer<T = Self>;
     type Packer: TokenPacker<T = Self>;
 
     // The number of bits of source text contained in this Token.
     fn bit_count(&self) -> usize;
+}
+
+pub trait Tokenizer {
+    type T: Token;
+    type Iter<R: std::io::Read>: std::iter::Iterator<Item = Result<Self::T>>;
+
+    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>>;
 }
 
 /// Provides a method to create a [`Token`] stream from text.
@@ -102,11 +109,10 @@ where
 }
 
 /// Unpacks a vector of tokens previously packed with [`pack_all()`].
-pub fn unpack_all<R, T, TI>(mut r: &mut R) -> Result<Vec<T>>
+pub fn unpack_all<R, T>(mut r: &mut R) -> Result<Vec<T>>
 where
     R: std::io::Read,
     T: Token,
-    TI: TokenIter<Cursor<Vec<u8>>, T = T>,
 {
     let size = unpack_u64(&mut r)?;
     trace!("unpacked size {}", size);
@@ -114,7 +120,7 @@ where
     let mut buf = vec![0u8; safe_size];
     r.read_exact(&mut buf)?;
     trace!("read {} bytes to unpack into tokens", buf.len());
-    TI::unpack(Cursor::new(buf)).unwrap().collect()
+    T::Tokenizer::tokenize(r).unwrap().collect()
 }
 
 // TODO: dedup with code::common::pack_u64()
@@ -131,16 +137,16 @@ fn unpack_u64<R: std::io::Read>(mut r: R) -> Result<u64> {
 
 #[cfg(test)]
 mod roundtrip_with_len_tests {
-    use super::bytes::{self, Byte, ByteIter, BytePacker};
-    use super::graphemes::{Grapheme, GraphemeIter, GraphemePacker};
+    use super::bytes::{self, Byte};
+    use super::graphemes::Grapheme;
     use super::*;
     use std::io::{Cursor, Read};
     #[test]
     fn empty() {
         let tokens = Vec::<Byte>::new();
         let mut buf = Vec::<u8>::new();
-        assert!(pack_all::<_, _, BytePacker>(tokens.clone(), &mut buf).is_ok());
-        let got = unpack_all::<_, _, ByteIter<_>>(&mut Cursor::new(&mut buf)).unwrap();
+        assert!(pack_all(tokens.clone(), &mut buf).is_ok());
+        let got: Vec<Byte> = unpack_all(&mut Cursor::new(&mut buf)).unwrap();
         assert_eq!(got, tokens);
     }
 
@@ -159,8 +165,8 @@ mod roundtrip_with_len_tests {
             bytes::Byte::from(0),
         ];
         let mut buf = Vec::<u8>::new();
-        assert!(pack_all::<_, _, BytePacker>(tokens.clone(), &mut buf).is_ok());
-        let got = unpack_all::<_, _, ByteIter<_>>(&mut Cursor::new(&mut buf)).unwrap();
+        assert!(pack_all(tokens.clone(), &mut buf).is_ok());
+        let got: Vec<Byte> = unpack_all(&mut Cursor::new(&mut buf)).unwrap();
         assert_eq!(got, tokens);
     }
 
@@ -172,13 +178,13 @@ mod roundtrip_with_len_tests {
             bytes::Byte::from(2),
         ];
         let mut buf = Vec::<u8>::new();
-        assert!(pack_all::<_, _, BytePacker>(tokens.clone(), &mut buf).is_ok());
+        assert!(pack_all(tokens.clone(), &mut buf).is_ok());
 
         // The following trailing data should be ignored.
         buf.push(0b1111_1111);
 
         let mut r = Cursor::new(buf);
-        let got = unpack_all::<_, _, ByteIter<_>>(&mut r).unwrap();
+        let got: Vec<Byte> = unpack_all(&mut r).unwrap();
         assert_eq!(got, tokens);
 
         // The buffer should not be read beyond the trailing data.
@@ -194,13 +200,13 @@ mod roundtrip_with_len_tests {
             Grapheme::from("b".to_owned()),
         ];
         let mut buf = Vec::<u8>::new();
-        assert!(pack_all::<_, _, GraphemePacker>(tokens.clone(), &mut buf).is_ok());
+        assert!(pack_all(tokens.clone(), &mut buf).is_ok());
 
         // The following trailing data should be ignored.
         buf.push(0b1111_1111);
 
         let mut r = Cursor::new(buf);
-        let got = unpack_all::<_, _, GraphemeIter>(&mut r).unwrap();
+        let got: Vec<Grapheme> = unpack_all(&mut r).unwrap();
         assert_eq!(got, tokens);
 
         // The buffer should not be read beyond the trailing data.

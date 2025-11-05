@@ -22,7 +22,7 @@
 //! [Unicode words]: http://www.unicode.org/reports/tr29/
 
 use super::string_parts;
-use crate::tokens::{Token, TokenIter};
+use crate::tokens::{Token, TokenIter, Tokenizer};
 
 use anyhow::Result;
 use std::convert::{From, Into};
@@ -41,8 +41,11 @@ pub type WordIter = string_parts::StringPartsIter<Word>;
 
 pub struct WordTokenizer;
 
-impl WordTokenizer {
-    pub fn tokenize<R: std::io::Read>(r: R) -> Result<WordIter> {
+impl Tokenizer for WordTokenizer {
+    type T = Word;
+    type Iter<R: std::io::Read> = WordIter;
+
+    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
         WordIter::unpack(r)
     }
 }
