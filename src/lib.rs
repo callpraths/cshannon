@@ -93,17 +93,17 @@ mod util;
 pub use crate::encoding::EncodingScheme;
 
 use code::Letter;
-use tokens::bytes::{Byte, ByteIter, BytePacker};
-use tokens::graphemes::{Grapheme, GraphemeIter, GraphemePacker};
-use tokens::words::{Word, WordIter, WordPacker};
-use tokens::{Token, TokenIter, TokenPacker};
+use tokens::bytes::Byte;
+use tokens::graphemes::Grapheme;
+use tokens::words::Word;
+use tokens::{Token, TokenPacker, Tokenizer};
 
 use anyhow::{anyhow, Result};
 use log::{debug, info, log_enabled, trace, Level};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Seek;
-use std::io::{BufReader, BufWriter, Cursor};
+use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
 use crate::encoding::{encoder_constructor, EncodingConstructor};
@@ -129,17 +129,17 @@ pub struct Args<'a> {
 pub fn run(args: Args) -> Result<()> {
     match args.command {
         Command::Compress(command_args) => match args.tokenizer {
-            "byte" => compress::<Byte, ByteIter<BufReader<File>>>(
+            "byte" => compress::<Byte>(
                 args.input_file,
                 args.output_file,
                 encoder_constructor(command_args.encoding_scheme),
             ),
-            "grapheme" => compress::<Grapheme, GraphemeIter>(
+            "grapheme" => compress::<Grapheme>(
                 args.input_file,
                 args.output_file,
                 encoder_constructor(command_args.encoding_scheme),
             ),
-            "word" => compress::<Word, WordIter>(
+            "word" => compress::<Word>(
                 args.input_file,
                 args.output_file,
                 encoder_constructor(command_args.encoding_scheme),
@@ -147,20 +147,9 @@ pub fn run(args: Args) -> Result<()> {
             _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
         },
         Command::Decompress(_) => match args.tokenizer {
-            "byte" => {
-                decompress::<Byte, ByteIter<BufReader<File>>, ByteIter<Cursor<Vec<u8>>>, BytePacker>(
-                    args.input_file,
-                    args.output_file,
-                )
-            }
-            "grapheme" => decompress::<Grapheme, GraphemeIter, GraphemeIter, GraphemePacker>(
-                args.input_file,
-                args.output_file,
-            ),
-            "word" => decompress::<Word, WordIter, WordIter, WordPacker>(
-                args.input_file,
-                args.output_file,
-            ),
+            "byte" => decompress::<Byte>(args.input_file, args.output_file),
+            "grapheme" => decompress::<Grapheme>(args.input_file, args.output_file),
+            "word" => decompress::<Word>(args.input_file, args.output_file),
             _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
         },
     }
@@ -168,22 +157,18 @@ pub fn run(args: Args) -> Result<()> {
 
 /// Document me.
 /// TODO: Convert to use AsRef<Path>
-pub fn compress<T, TIter>(
+pub fn compress<T: Token>(
     input_file: &Path,
     output_file: &Path,
     encoder: EncodingConstructor<T>,
-) -> Result<()>
-where
-    T: Token,
-    TIter: TokenIter<BufReader<File>, T = T>,
-{
+) -> Result<()> {
     info!("Compressing...");
     let r = BufReader::new(File::open(input_file)?);
-    let tokens = TIter::unpack(r).unwrap().map(|r| r.unwrap());
+    let tokens = T::Tokenizer::tokenize(r).unwrap().map(|r| r.unwrap());
     let encoding = encoder(model::from(tokens))?;
 
     let r = BufReader::new(File::open(input_file)?);
-    let tokens = TIter::unpack(r).unwrap().map(|r| r.unwrap());
+    let tokens = T::Tokenizer::tokenize(r).unwrap().map(|r| r.unwrap());
     let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
@@ -195,13 +180,7 @@ where
 
 /// Document me.
 /// TODO: Convert to use AsRef<Path>
-pub fn decompress<T, TIter, TAllIter, TPacker>(input_file: &Path, output_file: &Path) -> Result<()>
-where
-    T: Token,
-    TIter: TokenIter<BufReader<File>, T = T>,
-    TAllIter: TokenIter<Cursor<Vec<u8>>, T = T>,
-    TPacker: TokenPacker<T = T>,
-{
+pub fn decompress<T: Token>(input_file: &Path, output_file: &Path) -> Result<()> {
     info!("Decompressing...");
     let mut r = File::open(input_file)?;
     trace!("File position at the start: {:?}", r.stream_position());
@@ -237,7 +216,7 @@ where
     let tokens = decode(&map, coded_text).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
-    TPacker::pack(tokens, &mut w)?;
+    T::Packer::pack(tokens, &mut w)?;
     Ok(())
 }
 
