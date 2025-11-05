@@ -77,13 +77,10 @@ where
 }
 
 /// Provides a method to pack a [`Token`] stream to text.
-pub trait TokenPacker<W>
-where
-    W: std::io::Write,
-{
+pub trait TokenPacker {
     type T: Token;
 
-    fn pack<I>(i: I, w: &mut W) -> Result<()>
+    fn pack<I, W: std::io::Write>(i: I, w: &mut W) -> Result<()>
     where
         I: std::iter::Iterator<Item = Self::T>;
 }
@@ -95,7 +92,7 @@ pub fn pack_all<W, T, TP>(tokens: Vec<T>, w: &mut W) -> Result<()>
 where
     W: std::io::Write,
     T: Token,
-    TP: TokenPacker<W, T = T>,
+    TP: TokenPacker<T = T>,
 {
     // FIXME: This assumes that tokens are at least a byte wide.
     let size = tokens.iter().fold(0, |sum, t| sum + t.bit_count()) / 8;

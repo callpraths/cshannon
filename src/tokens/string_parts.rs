@@ -91,14 +91,13 @@ pub struct StringPartsPacker<S>(PhantomData<S>)
 where
     S: Into<String> + Token;
 
-impl<S, W> TokenPacker<W> for StringPartsPacker<S>
+impl<S> TokenPacker for StringPartsPacker<S>
 where
     S: Into<String> + Token,
-    W: std::io::Write,
 {
     type T = S;
 
-    fn pack<I>(i: I, w: &mut W) -> Result<()>
+    fn pack<I, W: std::io::Write>(i: I, w: &mut W) -> Result<()>
     where
         I: std::iter::Iterator<Item = Self::T>,
     {

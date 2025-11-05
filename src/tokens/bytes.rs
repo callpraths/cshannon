@@ -82,15 +82,12 @@ impl<R: std::io::Read> std::iter::Iterator for ByteIter<R> {
 
 /// Provides a method to pack a [`Byte`] stream to text.
 #[derive(Clone, Debug, Default)]
-pub struct BytePacker();
+pub struct BytePacker;
 
-impl<W: std::io::Write> TokenPacker<W> for BytePacker
-where
-    W: std::io::Write,
-{
+impl TokenPacker for BytePacker {
     type T = Byte;
 
-    fn pack<I>(i: I, w: &mut W) -> Result<()>
+    fn pack<I, W: std::io::Write>(i: I, w: &mut W) -> Result<()>
     where
         I: std::iter::Iterator<Item = Self::T>,
     {

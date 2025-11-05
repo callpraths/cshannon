@@ -176,7 +176,7 @@ pub fn compress<T, TIter, TPacker>(
 where
     T: Token,
     TIter: TokenIter<BufReader<File>, T = T>,
-    TPacker: TokenPacker<BufWriter<File>, T = T>,
+    TPacker: TokenPacker<T = T>,
 {
     info!("Compressing...");
     let r = BufReader::new(File::open(input_file)?);
@@ -201,7 +201,7 @@ where
     T: Token,
     TIter: TokenIter<BufReader<File>, T = T>,
     TAllIter: TokenIter<Cursor<Vec<u8>>, T = T>,
-    TPacker: TokenPacker<BufWriter<File>, T = T>,
+    TPacker: TokenPacker<T = T>,
 {
     info!("Decompressing...");
     let mut r = File::open(input_file)?;
