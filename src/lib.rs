@@ -30,7 +30,7 @@
 //!
 //! The easiest way to use cshannon library is:
 //! ```
-//! use cshannon::{Args, Command, CompressArgs, EncodingScheme, run};
+//! use cshannon::{Args, Command, CompressArgs, EncodingScheme, TokenizationScheme, run};
 //! use std::path::Path;
 //!
 //! run(Args{
@@ -39,7 +39,7 @@
 //!     }),
 //!     input_file: &Path::new("/path/to/input_file"),
 //!     output_file: &Path::new("/path/to/output_file"),
-//!     tokenizer: "byte",
+//!     tokenization_scheme: TokenizationScheme::Byte,
 //! });
 //! ```
 //!
@@ -122,34 +122,41 @@ pub struct Args<'a> {
     pub command: Command,
     pub input_file: &'a Path,
     pub output_file: &'a Path,
-    pub tokenizer: &'a str,
+    pub tokenization_scheme: TokenizationScheme,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum TokenizationScheme {
+    Byte,
+    Grapheme,
+    Word,
 }
 
 pub fn run(args: Args) -> Result<()> {
     match args.command {
-        Command::Compress(command_args) => match args.tokenizer {
-            "byte" => compress::<Byte>(
+        Command::Compress(command_args) => match args.tokenization_scheme {
+            TokenizationScheme::Byte => compress::<Byte>(
                 args.input_file,
                 args.output_file,
                 command_args.encoding_scheme,
             ),
-            "grapheme" => compress::<Grapheme>(
+            TokenizationScheme::Grapheme => compress::<Grapheme>(
                 args.input_file,
                 args.output_file,
                 command_args.encoding_scheme,
             ),
-            "word" => compress::<Word>(
+            TokenizationScheme::Word => compress::<Word>(
                 args.input_file,
                 args.output_file,
                 command_args.encoding_scheme,
             ),
-            _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
         },
-        Command::Decompress(_) => match args.tokenizer {
-            "byte" => decompress::<Byte>(args.input_file, args.output_file),
-            "grapheme" => decompress::<Grapheme>(args.input_file, args.output_file),
-            "word" => decompress::<Word>(args.input_file, args.output_file),
-            _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
+        Command::Decompress(_) => match args.tokenization_scheme {
+            TokenizationScheme::Byte => decompress::<Byte>(args.input_file, args.output_file),
+            TokenizationScheme::Grapheme => {
+                decompress::<Grapheme>(args.input_file, args.output_file)
+            }
+            TokenizationScheme::Word => decompress::<Word>(args.input_file, args.output_file),
         },
     }
 }
@@ -246,28 +253,32 @@ About my neck was hung.
 
     #[bench]
     fn bytes_balanced_tree(b: &mut Bencher) {
-        b.iter(|| roundtrip("byte", EncodingScheme::BalancedTree, TEXT));
+        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
     }
 
     #[bench]
     fn bytes_shannon(b: &mut Bencher) {
         // TODO(FIXME): Should be EncodingScheme::Shannon
-        b.iter(|| roundtrip("byte", EncodingScheme::BalancedTree, TEXT));
+        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
     }
 
     #[bench]
     fn bytes_fano(b: &mut Bencher) {
         // TODO(FIXME): Should be EncodingScheme::Fano
-        b.iter(|| roundtrip("byte", EncodingScheme::BalancedTree, TEXT));
+        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
     }
 
     #[bench]
     fn bytes_huffman(b: &mut Bencher) {
         // TODO(FIXME): Should be EncodingScheme::Huffman
-        b.iter(|| roundtrip("byte", EncodingScheme::BalancedTree, TEXT));
+        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
     }
 
-    fn roundtrip(tokenizer: &str, encoding_scheme: EncodingScheme, data: &str) {
+    fn roundtrip(
+        tokenization_scheme: TokenizationScheme,
+        encoding_scheme: EncodingScheme,
+        data: &str,
+    ) {
         testing::init_logs_for_test();
         let work_dir = tempfile::tempdir().unwrap();
         let input_file = work_dir.path().join("input.txt");
@@ -279,13 +290,13 @@ About my neck was hung.
             command: Command::Compress(CompressArgs { encoding_scheme }),
             input_file: &input_file.as_path(),
             output_file: &compressed_file.as_path(),
-            tokenizer: tokenizer,
+            tokenization_scheme,
         }));
         print_error_and_bail(run(Args {
             command: Command::Decompress(DecompressArgs {}),
             input_file: &compressed_file.as_path(),
             output_file: &decompressed_file.as_path(),
-            tokenizer: tokenizer,
+            tokenization_scheme,
         }));
         let decompressed = fs::read(&decompressed_file).unwrap();
         assert_eq!(data.as_bytes(), &decompressed[..]);

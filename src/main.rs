@@ -18,7 +18,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use cshannon::{Command, CompressArgs, DecompressArgs, EncodingScheme};
+use cshannon::{Command, CompressArgs, DecompressArgs, EncodingScheme, TokenizationScheme};
 use env_logger::Env;
 
 #[derive(Parser)]
@@ -65,7 +65,7 @@ fn main() -> Result<()> {
         command,
         input_file: &cli.input_file,
         output_file: &cli.output_file,
-        tokenizer: &cli.tokenizer,
+        tokenization_scheme: to_tokenization_scheme(&cli.tokenizer),
     })?;
     println!("Success");
     Ok(())
@@ -79,5 +79,15 @@ fn to_encoding_scheme(encoding: &str) -> EncodingScheme {
         "shannon" => EncodingScheme::Shannon,
         "huffman" => EncodingScheme::Huffman,
         _ => panic!("Unsupported encoding scheme {}", encoding),
+    }
+}
+
+// Migration kludge
+fn to_tokenization_scheme(tokenization: &str) -> TokenizationScheme {
+    match tokenization {
+        "byte" => TokenizationScheme::Byte,
+        "grapheme" => TokenizationScheme::Grapheme,
+        "word" => TokenizationScheme::Word,
+        _ => panic!("Unsupported tokenization scheme {}", tokenization),
     }
 }

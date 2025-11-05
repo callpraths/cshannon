@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use anyhow::Result;
-use cshannon::{run, Args, Command, CompressArgs, DecompressArgs, EncodingScheme};
+use cshannon::{
+    run, Args, Command, CompressArgs, DecompressArgs, EncodingScheme, TokenizationScheme,
+};
 use std::fs;
 use std::sync::Once;
 use tempfile;
@@ -32,13 +34,13 @@ pub fn roundtrip(tokenizer: &str, encoding: &str, data: &[u8]) {
         }),
         input_file: &input_file.as_path(),
         output_file: &compressed_file.as_path(),
-        tokenizer: tokenizer,
+        tokenization_scheme: to_tokenization_scheme(tokenizer),
     }));
     print_error_and_bail(run(Args {
         command: Command::Decompress(DecompressArgs {}),
         input_file: &compressed_file.as_path(),
         output_file: &decompressed_file.as_path(),
-        tokenizer: tokenizer,
+        tokenization_scheme: to_tokenization_scheme(tokenizer),
     }));
     let decompressed = fs::read(&decompressed_file).unwrap();
     assert_eq!(data, &decompressed[..]);
@@ -65,5 +67,15 @@ fn to_encoding_scheme(encoding: &str) -> EncodingScheme {
         "shannon" => EncodingScheme::Shannon,
         "huffman" => EncodingScheme::Huffman,
         _ => panic!("Unsupported encoding scheme {}", encoding),
+    }
+}
+
+// Migration kludge
+fn to_tokenization_scheme(tokenization: &str) -> TokenizationScheme {
+    match tokenization {
+        "byte" => TokenizationScheme::Byte,
+        "grapheme" => TokenizationScheme::Grapheme,
+        "word" => TokenizationScheme::Word,
+        _ => panic!("Unsupported tokenization scheme {}", tokenization),
     }
 }
