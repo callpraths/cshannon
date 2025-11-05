@@ -69,17 +69,17 @@ pub enum EncodingScheme {
     Shannon,
 }
 
-pub type EncodingConstructor<T> = fn(Model<T>) -> Result<Encoding<T>>;
-
-/// Return the type-appropriate appropriate constructor function for the given
-/// encoding scheme.
-pub fn encoder_constructor<T: Token>(scheme: EncodingScheme) -> EncodingConstructor<T> {
-    match scheme {
+pub fn new_encoder<T: Token>(
+    encoding_scheme: &EncodingScheme,
+    model: Model<T>,
+) -> Result<Encoding<T>> {
+    let constructor = match encoding_scheme {
         EncodingScheme::BalancedTree => balanced_tree::new::<T>,
         EncodingScheme::Fano => fano::new::<T>,
         EncodingScheme::Huffman => huffman::new::<T>,
         EncodingScheme::Shannon => shannon::new::<T>,
-    }
+    };
+    constructor(model)
 }
 
 /// Maps a [`Token`] to a [`Letter`].

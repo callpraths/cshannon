@@ -90,6 +90,7 @@ pub mod tokens;
 mod encoding;
 mod util;
 
+use crate::encoding::new_encoder;
 pub use crate::encoding::EncodingScheme;
 
 use code::Letter;
@@ -105,8 +106,6 @@ use std::fs::File;
 use std::io::Seek;
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
-
-use crate::encoding::{encoder_constructor, EncodingConstructor};
 
 pub enum Command {
     Compress(CompressArgs),
@@ -132,17 +131,17 @@ pub fn run(args: Args) -> Result<()> {
             "byte" => compress::<Byte>(
                 args.input_file,
                 args.output_file,
-                encoder_constructor(command_args.encoding_scheme),
+                command_args.encoding_scheme,
             ),
             "grapheme" => compress::<Grapheme>(
                 args.input_file,
                 args.output_file,
-                encoder_constructor(command_args.encoding_scheme),
+                command_args.encoding_scheme,
             ),
             "word" => compress::<Word>(
                 args.input_file,
                 args.output_file,
-                encoder_constructor(command_args.encoding_scheme),
+                command_args.encoding_scheme,
             ),
             _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
         },
@@ -160,12 +159,12 @@ pub fn run(args: Args) -> Result<()> {
 pub fn compress<T: Token>(
     input_file: &Path,
     output_file: &Path,
-    encoder: EncodingConstructor<T>,
+    encoding_scheme: EncodingScheme,
 ) -> Result<()> {
     info!("Compressing...");
     let r = BufReader::new(File::open(input_file)?);
     let tokens = T::Tokenizer::tokenize(r).unwrap().map(|r| r.unwrap());
-    let encoding = encoder(model::from(tokens))?;
+    let encoding = new_encoder(&&encoding_scheme, model::from(tokens))?;
 
     let r = BufReader::new(File::open(input_file)?);
     let tokens = T::Tokenizer::tokenize(r).unwrap().map(|r| r.unwrap());
