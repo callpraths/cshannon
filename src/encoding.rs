@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Defines the [`Encoding`] struct that maps an [`EncodingKey`] to a
+//! Defines the [`Encoding`] struct that maps an [`Token`] to a
 //! [`Letter`].
 //!
 //! An [`Encoding`] can be generated from a [`Model`](crate::model::Model) by
@@ -20,7 +20,8 @@
 //! [balanced_tree], [shannon], [fano], or [huffman].
 
 use crate::code::{Alphabet, Letter};
-use crate::model::{Model, ModelKey};
+use crate::model::Model;
+use crate::tokens::Token;
 use anyhow::Result;
 use log::{debug, log_enabled, Level};
 use std::collections::HashMap;
@@ -72,28 +73,23 @@ pub type EncodingConstructor<T> = fn(Model<T>) -> Result<Encoding<T>>;
 
 /// Return the type-appropriate appropriate constructor function for the given
 /// encoding scheme.
-pub fn encoder_constructor<K: EncodingKey>(scheme: EncodingScheme) -> EncodingConstructor<K> {
+pub fn encoder_constructor<T: Token>(scheme: EncodingScheme) -> EncodingConstructor<T> {
     match scheme {
-        EncodingScheme::BalancedTree => balanced_tree::new::<K>,
-        EncodingScheme::Fano => fano::new::<K>,
-        EncodingScheme::Huffman => huffman::new::<K>,
-        EncodingScheme::Shannon => shannon::new::<K>,
+        EncodingScheme::BalancedTree => balanced_tree::new::<T>,
+        EncodingScheme::Fano => fano::new::<T>,
+        EncodingScheme::Huffman => huffman::new::<T>,
+        EncodingScheme::Shannon => shannon::new::<T>,
     }
 }
 
-/// Shorthand for trait bounds required for keys in an [`Encoding`].
-pub trait EncodingKey: Clone + std::fmt::Debug + Eq + std::hash::Hash {}
-
-impl<K: EncodingKey> ModelKey for K {}
-
-/// Maps an [`EncdingKey`] to a [`Letter`].
+/// Maps a [`Token`] to a [`Letter`].
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct Encoding<K: EncodingKey> {
-    map: HashMap<K, Letter>,
+pub struct Encoding<T: Token> {
+    map: HashMap<T, Letter>,
     alphabet: Alphabet,
 }
 
-impl<K: EncodingKey> Encoding<K> {
+impl<T: Token> Encoding<T> {
     /// The [`Alphabet`] used by this encoding.
     pub fn alphabet(&self) -> &Alphabet {
         &self.alphabet
@@ -103,7 +99,7 @@ impl<K: EncodingKey> Encoding<K> {
     ///
     /// The returned set is sorted in a stable order corresponding to the order
     /// of letters in [`Self::alphabet()`]
-    pub fn tokens(&self) -> Vec<K> {
+    pub fn tokens(&self) -> Vec<T> {
         let m = self.reverse_map();
         let mut letters: Vec<&Letter> = self.map.values().collect();
         letters.sort();
@@ -114,12 +110,12 @@ impl<K: EncodingKey> Encoding<K> {
     ///
     /// Exposes the internal [`HashMap`](std::collections::HashMap) via an
     /// immutable reference.
-    pub fn map(&self) -> &HashMap<K, Letter> {
+    pub fn map(&self) -> &HashMap<T, Letter> {
         &self.map
     }
 
     /// `Encoding` implementations should use `new` to create an `Encoding`.
-    fn new(map: HashMap<K, Letter>) -> Result<Self> {
+    fn new(map: HashMap<T, Letter>) -> Result<Self> {
         let mut letters: Vec<&Letter> = map.values().collect();
         letters.sort();
         let alphabet = Alphabet::new(letters.into_iter().cloned().collect())?;
@@ -127,7 +123,7 @@ impl<K: EncodingKey> Encoding<K> {
         Ok(Self { map, alphabet })
     }
 
-    fn reverse_map(&self) -> HashMap<&Letter, &K> {
+    fn reverse_map(&self) -> HashMap<&Letter, &T> {
         let mut m = HashMap::new();
         for (t, l) in &self.map {
             m.insert(l, t);
@@ -141,11 +137,11 @@ impl<K: EncodingKey> Encoding<K> {
 /// This is a private function useful for checking expected Encoding in
 /// unit tests.
 #[allow(dead_code)]
-fn from_pairs<K: EncodingKey>(data: &[(K, Letter)]) -> Result<Encoding<K>> {
+fn from_pairs<T: Token>(data: &[(T, Letter)]) -> Result<Encoding<T>> {
     Encoding::new(data.iter().cloned().collect())
 }
 
-fn log_encoder_ring<K: EncodingKey>(m: &HashMap<K, Letter>) {
+fn log_encoder_ring<T: Token>(m: &HashMap<T, Letter>) {
     if !log_enabled!(Level::Debug) {
         return;
     }

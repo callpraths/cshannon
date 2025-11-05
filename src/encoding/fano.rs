@@ -16,9 +16,10 @@
 //!
 //! [Fano encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
 
-use super::{Encoding, EncodingKey};
+use super::Encoding;
 use crate::code::Letter;
 use crate::model::Model;
+use crate::tokens::Token;
 use anyhow::Result;
 use log::trace;
 use std::collections::HashMap;
@@ -28,7 +29,7 @@ use std::collections::HashMap;
 /// See [package documentation] for details.
 ///
 /// [package documentation]: index.html
-pub fn new<T: EncodingKey>(m: Model<T>) -> Result<Encoding<T>> {
+pub fn new<T: Token>(m: Model<T>) -> Result<Encoding<T>> {
     if m.is_empty() {
         return Encoding::new(HashMap::new());
     }
@@ -47,9 +48,9 @@ pub fn new<T: EncodingKey>(m: Model<T>) -> Result<Encoding<T>> {
 }
 
 #[derive(Debug, PartialEq)]
-struct Window<'a, T: EncodingKey>(&'a mut [(T, f64)]);
+struct Window<'a, T: Token>(&'a mut [(T, f64)]);
 
-impl<'a, T: EncodingKey> std::fmt::Display for Window<'a, T> {
+impl<'a, T: Token> std::fmt::Display for Window<'a, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
         write!(f, "[")?;
@@ -65,12 +66,12 @@ impl<'a, T: EncodingKey> std::fmt::Display for Window<'a, T> {
 }
 
 #[derive(Debug, PartialEq)]
-enum Refinement<'a, T: EncodingKey> {
+enum Refinement<'a, T: Token> {
     Split(Window<'a, T>, Window<'a, T>),
     Terminal(T),
 }
 
-impl<'a, T: EncodingKey> std::fmt::Display for Refinement<'a, T> {
+impl<'a, T: Token> std::fmt::Display for Refinement<'a, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Refinement::Split(left, right) => write!(f, "Split({}, {})", left, right),
@@ -81,7 +82,7 @@ impl<'a, T: EncodingKey> std::fmt::Display for Refinement<'a, T> {
 
 const LINEAR_SEARCH_THRESHOLD: usize = 6;
 
-impl<'a, T: EncodingKey> Window<'a, T> {
+impl<'a, T: Token> Window<'a, T> {
     pub fn new(data: &'a mut [(T, f64)]) -> Self {
         Self(data)
     }
@@ -143,12 +144,12 @@ impl<'a, T: EncodingKey> Window<'a, T> {
     }
 }
 
-enum Frame<'a, T: EncodingKey> {
+enum Frame<'a, T: Token> {
     Left { residual: Window<'a, T> },
     Right,
 }
 
-impl<'a, T: EncodingKey> std::fmt::Display for Frame<'a, T> {
+impl<'a, T: Token> std::fmt::Display for Frame<'a, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Frame::Left { residual } => write!(f, "Left({})", residual),
@@ -157,9 +158,9 @@ impl<'a, T: EncodingKey> std::fmt::Display for Frame<'a, T> {
     }
 }
 
-struct CodeIter<'a, T: EncodingKey>(Vec<Frame<'a, T>>);
+struct CodeIter<'a, T: Token>(Vec<Frame<'a, T>>);
 
-impl<'a, T: EncodingKey> std::fmt::Display for CodeIter<'a, T> {
+impl<'a, T: Token> std::fmt::Display for CodeIter<'a, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
         let mut first = true;
@@ -174,7 +175,7 @@ impl<'a, T: EncodingKey> std::fmt::Display for CodeIter<'a, T> {
     }
 }
 
-impl<'a, T: EncodingKey> Iterator for CodeIter<'a, T> {
+impl<'a, T: Token> Iterator for CodeIter<'a, T> {
     type Item = (T, Letter);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -190,7 +191,7 @@ impl<'a, T: EncodingKey> Iterator for CodeIter<'a, T> {
     }
 }
 
-impl<'a, T: EncodingKey> CodeIter<'a, T> {
+impl<'a, T: Token> CodeIter<'a, T> {
     pub fn new(window: Window<'a, T>) -> Self {
         Self(vec![Frame::Left { residual: window }])
     }
