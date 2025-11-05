@@ -56,6 +56,7 @@ fn main() -> Result<()> {
     let command = match &cli.command {
         Commands::Compress => Command::Compress(CompressArgs {
             encoding_scheme: to_encoding_scheme(&cli.encoding),
+            tokenization_scheme: to_tokenization_scheme(&cli.tokenizer),
         }),
         Commands::Decompress => Command::Decompress(DecompressArgs {}),
     };
@@ -65,7 +66,6 @@ fn main() -> Result<()> {
         command,
         input_file: &cli.input_file,
         output_file: &cli.output_file,
-        tokenization_scheme: to_tokenization_scheme(&cli.tokenizer),
     })?;
     println!("Success");
     Ok(())

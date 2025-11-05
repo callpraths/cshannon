@@ -30,17 +30,16 @@ pub fn roundtrip(tokenizer: &str, encoding: &str, data: &[u8]) {
     fs::write(&input_file, data).unwrap();
     print_error_and_bail(run(Args {
         command: Command::Compress(CompressArgs {
+            tokenization_scheme: to_tokenization_scheme(tokenizer),
             encoding_scheme: to_encoding_scheme(encoding),
         }),
         input_file: &input_file.as_path(),
         output_file: &compressed_file.as_path(),
-        tokenization_scheme: to_tokenization_scheme(tokenizer),
     }));
     print_error_and_bail(run(Args {
         command: Command::Decompress(DecompressArgs {}),
         input_file: &compressed_file.as_path(),
         output_file: &decompressed_file.as_path(),
-        tokenization_scheme: to_tokenization_scheme(tokenizer),
     }));
     let decompressed = fs::read(&decompressed_file).unwrap();
     assert_eq!(data, &decompressed[..]);

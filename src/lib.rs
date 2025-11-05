@@ -115,6 +115,7 @@ pub enum Command {
 }
 
 pub struct CompressArgs {
+    pub tokenization_scheme: TokenizationScheme,
     pub encoding_scheme: EncodingScheme,
 }
 
@@ -124,7 +125,6 @@ pub struct Args<'a> {
     pub command: Command,
     pub input_file: &'a Path,
     pub output_file: &'a Path,
-    pub tokenization_scheme: TokenizationScheme,
 }
 
 pub fn run(args: Args) -> Result<()> {
@@ -133,7 +133,7 @@ pub fn run(args: Args) -> Result<()> {
             args.input_file,
             args.output_file,
             command_args.encoding_scheme,
-            args.tokenization_scheme,
+            command_args.tokenization_scheme,
         ),
         Command::Decompress(_) => decompress(args.input_file, args.output_file),
     }
@@ -288,16 +288,17 @@ About my neck was hung.
 
         fs::write(&input_file, data).unwrap();
         print_error_and_bail(run(Args {
-            command: Command::Compress(CompressArgs { encoding_scheme }),
+            command: Command::Compress(CompressArgs {
+                tokenization_scheme,
+                encoding_scheme,
+            }),
             input_file: &input_file.as_path(),
             output_file: &compressed_file.as_path(),
-            tokenization_scheme,
         }));
         print_error_and_bail(run(Args {
             command: Command::Decompress(DecompressArgs {}),
             input_file: &compressed_file.as_path(),
             output_file: &decompressed_file.as_path(),
-            tokenization_scheme,
         }));
         let decompressed = fs::read(&decompressed_file).unwrap();
         assert_eq!(data.as_bytes(), &decompressed[..]);
