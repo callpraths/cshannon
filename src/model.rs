@@ -13,19 +13,21 @@
 // limitations under the License.
 
 //! Exports [`Model`], a statically computed zero order model over an iterator
-//! of [`ModelKey`]s.
+//! of [`Token`]s.
 //!
-//! The function [`from()`] consumes a [`ModelKey`] iterator to generate a
+//! The function [`from()`] consumes a [`Token`] iterator to generate a
 //! [`Model`].
 
 use std::collections::HashMap;
 
+use crate::tokens::Token;
+
 /// A statically computed zero order model for compression.
 ///
-/// The model exports certain statistics on input [`ModelKey`] set that are
+/// The model exports certain statistics on input [`Token`] set that are
 /// useful for statistical compression techniques.
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Model<K: ModelKey>(HashMap<K, Stats>);
+pub struct Model<T: Token>(HashMap<T, Stats>);
 
 #[derive(Clone, Debug, Default, PartialEq)]
 struct Stats {
@@ -33,27 +35,24 @@ struct Stats {
     p: f64,
 }
 
-/// Shorthand of trait bounds required for keys in a [`Model`]
-pub trait ModelKey: Clone + std::fmt::Debug + Eq + std::hash::Hash {}
-
-impl<K: ModelKey> Model<K> {
-    /// Frequency of occurrence of a [`ModelKey`].
-    pub fn frequency(&self, t: &K) -> u64 {
+impl<T: Token> Model<T> {
+    /// Frequency of occurrence of a [`Token`].
+    pub fn frequency(&self, t: &T) -> u64 {
         match self.0.get(t) {
             Some(s) => s.f,
             None => 0,
         }
     }
 
-    /// Probability of occurrence of a [`ModelKey`].
-    pub fn probability(&self, t: &K) -> f64 {
+    /// Probability of occurrence of a [`Token`].
+    pub fn probability(&self, t: &T) -> f64 {
         match self.0.get(t) {
             Some(s) => s.p,
             None => 0.0,
         }
     }
 
-    /// [`ModelKey`] count in the model.
+    /// [`Token`] count in the model.
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -66,9 +65,9 @@ impl<K: ModelKey> Model<K> {
         self.0.is_empty()
     }
 
-    /// Return the [`ModelKey`] set in the model sorted by relative frequencies,
+    /// Return the [`Token`] set in the model sorted by relative frequencies,
     /// highest first.
-    pub fn tokens_sorted(&self) -> Vec<K> {
+    pub fn tokens_sorted(&self) -> Vec<T> {
         let mut keys = Vec::with_capacity(self.0.len());
         for k in self.0.keys() {
             keys.push((*k).clone());
@@ -78,10 +77,10 @@ impl<K: ModelKey> Model<K> {
     }
 }
 
-/// Generate a zero order model from the given [`ModelKey`] stream.
+/// Generate a zero order model from the given [`Token`] stream.
 pub fn from<K, KS>(ts: KS) -> Model<K>
 where
-    K: ModelKey,
+    K: Token,
     KS: std::iter::IntoIterator<Item = K>,
 {
     let mut m = Model::<K>(HashMap::new());
@@ -101,7 +100,7 @@ where
 ///
 /// Intended to be used only from unit-tests, to avoid dependence on internal
 /// computation of frequencies in [`from()`].
-pub fn with_frequencies<K: ModelKey>(fs: &[(K, u64)]) -> Model<K> {
+pub fn with_frequencies<K: Token>(fs: &[(K, u64)]) -> Model<K> {
     let fs: HashMap<K, u64> = fs.to_vec().into_iter().collect();
     let total = fs.values().sum::<u64>() as f64;
     let mut m = Model::<K>(HashMap::new());

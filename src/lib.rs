@@ -30,14 +30,16 @@
 //!
 //! The easiest way to use cshannon library is:
 //! ```
-//! use cshannon::{Args, run};
+//! use cshannon::{Args, Command, CompressArgs, EncodingScheme, TokenizationScheme, run};
+//! use std::path::Path;
 //!
 //! run(Args{
-//!     command: "compress",
-//!     input_file: "/path/to/input_file",
-//!     output_file: "/path/to/output_file",
-//!     tokenizer: "byte",
-//!     encoding: "fano",
+//!     command: Command::Compress(CompressArgs{
+//!         encoding_scheme: EncodingScheme::Fano
+//!     }),
+//!     input_file: &Path::new("/path/to/input_file"),
+//!     output_file: &Path::new("/path/to/output_file"),
+//!     tokenization_scheme: TokenizationScheme::Byte,
 //! });
 //! ```
 //!
@@ -82,161 +84,122 @@
 //! module.
 
 pub mod code;
-pub mod encoding;
 pub mod model;
 pub mod tokens;
+
+mod encoding;
+mod tokenization_scheme;
 mod util;
 
+pub use crate::encoding::EncodingScheme;
+use crate::encoding::{new_encoder, Encoding};
+pub use crate::tokenization_scheme::TokenizationScheme;
+use crate::tokenization_scheme::{pack_tokenization_scheme, unpack_tokenization_scheme};
+
 use code::Letter;
-use encoding::Encoding;
-use encoding::{balanced_tree, fano, huffman, shannon};
-use model::Model;
-use tokens::bytes::{Byte, ByteIter, BytePacker};
-use tokens::graphemes::{Grapheme, GraphemeIter, GraphemePacker};
-use tokens::words::{Word, WordIter, WordPacker};
-use tokens::{Token, TokenIter, TokenPacker};
+use tokens::bytes::Byte;
+use tokens::graphemes::Grapheme;
+use tokens::words::Word;
+use tokens::{Token, TokenPacker, Tokenizer};
 
 use anyhow::{anyhow, Result};
-use log::{debug, info, log_enabled, trace, Level};
+use log::info;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Seek;
-use std::io::{BufReader, BufWriter, Cursor};
+use std::io::{BufReader, BufWriter};
+use std::path::Path;
+
+pub enum Command {
+    Compress(CompressArgs),
+    Decompress(DecompressArgs),
+}
+
+pub struct CompressArgs {
+    pub tokenization_scheme: TokenizationScheme,
+    pub encoding_scheme: EncodingScheme,
+}
+
+pub struct DecompressArgs {}
 
 pub struct Args<'a> {
-    pub command: &'a str,
-    pub input_file: &'a str,
-    pub output_file: &'a str,
-    pub encoding: &'a str,
-    pub tokenizer: &'a str,
+    pub command: Command,
+    pub input_file: &'a Path,
+    pub output_file: &'a Path,
 }
 
 pub fn run(args: Args) -> Result<()> {
     match args.command {
-        "compress" => match args.tokenizer {
-            "byte" => compress::<Byte, ByteIter<BufReader<File>>, BytePacker>(
-                args.input_file,
-                args.output_file,
-                encoder(args.encoding)?,
-            ),
-            "grapheme" => compress::<Grapheme, GraphemeIter, GraphemePacker>(
-                args.input_file,
-                args.output_file,
-                encoder(args.encoding)?,
-            ),
-            "word" => compress::<Word, WordIter, WordPacker>(
-                args.input_file,
-                args.output_file,
-                encoder(args.encoding)?,
-            ),
-            _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
-        },
-        "decompress" => match args.tokenizer {
-            "byte" => {
-                decompress::<Byte, ByteIter<BufReader<File>>, ByteIter<Cursor<Vec<u8>>>, BytePacker>(
-                    args.input_file,
-                    args.output_file,
-                )
-            }
-            "grapheme" => decompress::<Grapheme, GraphemeIter, GraphemeIter, GraphemePacker>(
-                args.input_file,
-                args.output_file,
-            ),
-            "word" => decompress::<Word, WordIter, WordIter, WordPacker>(
-                args.input_file,
-                args.output_file,
-            ),
-            _ => Err(anyhow!("invalid tokenizer {}", args.tokenizer)),
-        },
-        name => Err(anyhow!("unsupported command {}", name)),
-    }
-}
-
-type Encoder<T> = fn(Model<T>) -> Result<Encoding<T>>;
-
-fn encoder<T: Token>(encoding: &str) -> Result<Encoder<T>> {
-    match encoding {
-        "balanced_tree" => Ok(balanced_tree::new::<T>),
-        "shannon" => Ok(shannon::new::<T>),
-        "fano" => Ok(fano::new::<T>),
-        "huffman" => Ok(huffman::new::<T>),
-        _ => Err(anyhow!("invalid encoding {}", encoding)),
+        Command::Compress(command_args) => compress(
+            args.input_file,
+            args.output_file,
+            command_args.encoding_scheme,
+            command_args.tokenization_scheme,
+        ),
+        Command::Decompress(_) => decompress(args.input_file, args.output_file),
     }
 }
 
 /// Document me.
 /// TODO: Convert to use AsRef<Path>
-pub fn compress<T, TIter, TPacker>(
-    input_file: &str,
-    output_file: &str,
-    encoder: Encoder<T>,
-) -> Result<()>
-where
-    T: Token,
-    TIter: TokenIter<BufReader<File>, T = T>,
-    TPacker: TokenPacker<BufWriter<File>, T = T>,
-{
+pub fn compress(
+    input_file: &Path,
+    output_file: &Path,
+    encoding_scheme: EncodingScheme,
+    tokenization_scheme: TokenizationScheme,
+) -> Result<()> {
     info!("Compressing...");
-    let r = BufReader::new(File::open(input_file)?);
-    let tokens = TIter::unpack(r).unwrap().map(|r| r.unwrap());
-    let encoding = encoder(model::from(tokens))?;
-
-    let r = BufReader::new(File::open(input_file)?);
-    let tokens = TIter::unpack(r).unwrap().map(|r| r.unwrap());
-    let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
-    crate::tokens::pack_all::<_, _, TPacker>(encoding.tokens(), &mut w)?;
-    encoding.alphabet().clone().pack(&mut w)?;
+    pack_tokenization_scheme(tokenization_scheme, &mut w)?;
+
+    match tokenization_scheme {
+        TokenizationScheme::Byte => compress_with_token::<Byte, _>(input_file, w, encoding_scheme),
+        TokenizationScheme::Grapheme => {
+            compress_with_token::<Grapheme, _>(input_file, w, encoding_scheme)
+        }
+        TokenizationScheme::Word => compress_with_token::<Word, _>(input_file, w, encoding_scheme),
+    }
+}
+
+pub fn compress_with_token<T: Token, W: std::io::Write>(
+    input_file: &Path,
+    mut w: W,
+    encoding_scheme: EncodingScheme,
+) -> Result<()> {
+    info!("Compressing...");
+    let r = BufReader::new(File::open(input_file)?);
+    let tokens = T::Tokenizer::tokenize(r).unwrap().map(|r| r.unwrap());
+    let encoding = new_encoder(&&encoding_scheme, model::from(tokens))?;
+
+    let r = BufReader::new(File::open(input_file)?);
+    let tokens = T::Tokenizer::tokenize(r).unwrap().map(|r| r.unwrap());
+    let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
+
+    encoding.pack(&mut w)?;
     crate::code::pack(code_text, &mut w)?;
     Ok(())
 }
 
-/// Document me.
-/// TODO: Convert to use AsRef<Path>
-pub fn decompress<T, TIter, TAllIter, TPacker>(input_file: &str, output_file: &str) -> Result<()>
-where
-    T: Token,
-    TIter: TokenIter<BufReader<File>, T = T>,
-    TAllIter: TokenIter<Cursor<Vec<u8>>, T = T>,
-    TPacker: TokenPacker<BufWriter<File>, T = T>,
-{
+pub fn decompress(input_file: &Path, output_file: &Path) -> Result<()> {
     info!("Decompressing...");
-    let mut r = File::open(input_file)?;
-    trace!("File position at the start: {:?}", r.stream_position());
-    let mut br = BufReader::new(r);
-    let tokens = crate::tokens::unpack_all::<_, _, TAllIter>(&mut br)?;
-    trace!(
-        "File position after unpacking token set: {:?}",
-        br.stream_position()
-    );
-
-    let alphabet = crate::code::Alphabet::unpack(&mut br)?;
-    trace!(
-        "File position after unpacking alphabet set: {:?}",
-        br.stream_position()
-    );
-    let letters = alphabet.letters();
-
-    if letters.len() != tokens.len() {
-        return Err(anyhow!(
-            "Extracted letter count {} does not match token count {}",
-            letters.len(),
-            tokens.len(),
-        ));
+    let w = BufWriter::new(File::create(output_file)?);
+    let mut r = BufReader::new(File::open(input_file)?);
+    match unpack_tokenization_scheme(&mut r)? {
+        TokenizationScheme::Byte => decompress_with_token::<Byte, _, _>(r, w),
+        TokenizationScheme::Grapheme => decompress_with_token::<Grapheme, _, _>(r, w),
+        TokenizationScheme::Word => decompress_with_token::<Word, _, _>(r, w),
     }
-    let map = letters
-        .iter()
-        .cloned()
-        .zip(tokens.into_iter())
-        .collect::<HashMap<Letter, T>>();
-    log_decoder_ring(&map);
+}
 
-    let coded_text = crate::code::parse(&alphabet, br)?.map(|r| r.unwrap());
-    let tokens = decode(&map, coded_text).map(|r| r.unwrap());
-
-    let mut w = BufWriter::new(File::create(output_file)?);
-    TPacker::pack(tokens, &mut w)?;
+fn decompress_with_token<T: Token, R: std::io::Read, W: std::io::Write>(
+    mut r: R,
+    mut w: W,
+) -> Result<()> {
+    let encoding: Encoding<T> = Encoding::unpack(&mut r).unwrap();
+    let map = encoding.reverse_map();
+    let coded_text = crate::code::parse(&encoding.alphabet(), r)?.map(|r| r.unwrap());
+    let decoded_text = decode(&map, coded_text).map(|r| r.unwrap());
+    T::Packer::pack(decoded_text, &mut w)?;
     Ok(())
 }
 
@@ -255,7 +218,7 @@ where
 }
 
 fn decode<'a, T, CS: 'a>(
-    encoding: &'a HashMap<Letter, T>,
+    encoding: &'a HashMap<&'a Letter, &'a T>,
     input: CS,
 ) -> impl Iterator<Item = Result<T>> + 'a
 where
@@ -268,16 +231,6 @@ where
     })
 }
 
-fn log_decoder_ring<T: Token>(m: &HashMap<Letter, T>) {
-    if !log_enabled!(Level::Debug) {
-        return;
-    }
-    debug!("Decoder ring:");
-    for (l, t) in m.iter() {
-        debug!("  |{}|: |{}|", l, t);
-    }
-}
-
 mod benchmarks {
     // Benchmarks don't get detected as uses correctly.
     #![allow(dead_code)]
@@ -285,7 +238,7 @@ mod benchmarks {
 
     extern crate test;
 
-    use super::{run, Args};
+    use super::*;
     use crate::util::testing;
     use anyhow::Result;
     use std::fs;
@@ -301,25 +254,32 @@ About my neck was hung.
 
     #[bench]
     fn bytes_balanced_tree(b: &mut Bencher) {
-        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
     }
 
     #[bench]
     fn bytes_shannon(b: &mut Bencher) {
-        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+        // TODO(FIXME): Should be EncodingScheme::Shannon
+        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
     }
 
     #[bench]
     fn bytes_fano(b: &mut Bencher) {
-        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+        // TODO(FIXME): Should be EncodingScheme::Fano
+        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
     }
 
     #[bench]
     fn bytes_huffman(b: &mut Bencher) {
-        b.iter(|| roundtrip("byte", "balanced_tree", TEXT));
+        // TODO(FIXME): Should be EncodingScheme::Huffman
+        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
     }
 
-    fn roundtrip(tokenizer: &str, encoding: &str, data: &str) {
+    fn roundtrip(
+        tokenization_scheme: TokenizationScheme,
+        encoding_scheme: EncodingScheme,
+        data: &str,
+    ) {
         testing::init_logs_for_test();
         let work_dir = tempfile::tempdir().unwrap();
         let input_file = work_dir.path().join("input.txt");
@@ -328,18 +288,17 @@ About my neck was hung.
 
         fs::write(&input_file, data).unwrap();
         print_error_and_bail(run(Args {
-            command: "compress",
-            input_file: input_file.to_str().unwrap(),
-            output_file: compressed_file.to_str().unwrap(),
-            tokenizer: tokenizer,
-            encoding: encoding,
+            command: Command::Compress(CompressArgs {
+                tokenization_scheme,
+                encoding_scheme,
+            }),
+            input_file: &input_file.as_path(),
+            output_file: &compressed_file.as_path(),
         }));
         print_error_and_bail(run(Args {
-            command: "decompress",
-            input_file: compressed_file.to_str().unwrap(),
-            output_file: decompressed_file.to_str().unwrap(),
-            tokenizer: tokenizer,
-            encoding: encoding,
+            command: Command::Decompress(DecompressArgs {}),
+            input_file: &compressed_file.as_path(),
+            output_file: &decompressed_file.as_path(),
         }));
         let decompressed = fs::read(&decompressed_file).unwrap();
         assert_eq!(data.as_bytes(), &decompressed[..]);

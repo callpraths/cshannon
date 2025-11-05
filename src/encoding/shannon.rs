@@ -30,9 +30,9 @@
 //!
 //! [Shannon encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
 
-use super::{Encoding, EncodingKey};
-use crate::code::Letter;
+use super::Encoding;
 use crate::model::Model;
+use crate::{code::Letter, tokens::Token};
 use anyhow::Result;
 use log::{debug, log_enabled, Level};
 use std::collections::HashMap;
@@ -42,7 +42,7 @@ use std::collections::HashMap;
 /// See [package documentation] for details.
 ///
 /// [package documentation]: index.html
-pub fn new<K: EncodingKey>(m: Model<K>) -> Result<Encoding<K>> {
+pub fn new<K: Token>(m: Model<K>) -> Result<Encoding<K>> {
     if m.is_empty() {
         return Encoding::new(HashMap::new());
     }
@@ -98,13 +98,13 @@ fn e(c: f64, l: u64) -> Letter {
     letter
 }
 
-struct CumulativeProbabilities<'a, T: EncodingKey> {
+struct CumulativeProbabilities<'a, T: Token> {
     m: &'a Model<T>,
     tokens: std::vec::IntoIter<T>,
     sum: f64,
 }
 
-impl<'a, T: EncodingKey> CumulativeProbabilities<'a, T> {
+impl<'a, T: Token> CumulativeProbabilities<'a, T> {
     pub fn new(m: &'a Model<T>) -> Self {
         Self {
             m,
@@ -114,7 +114,7 @@ impl<'a, T: EncodingKey> CumulativeProbabilities<'a, T> {
     }
 }
 
-impl<'a, T: EncodingKey> Iterator for CumulativeProbabilities<'a, T> {
+impl<'a, T: Token> Iterator for CumulativeProbabilities<'a, T> {
     type Item = f64;
 
     fn next(&mut self) -> Option<Self::Item> {

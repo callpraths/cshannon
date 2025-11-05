@@ -16,7 +16,7 @@
 //!
 //! The stream makes zero copies internally while iterating over the stream.
 
-use crate::tokens::{Token, TokenIter, TokenPacker};
+use crate::tokens::{Token, TokenPacker, Tokenizer};
 use anyhow::{Error, Result};
 use std::convert::From;
 use std::fmt;
@@ -26,14 +26,6 @@ use std::hash::Hash;
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Byte(u8);
 
-/// Provides a method to create a [`Byte`] stream from text.
-#[derive(Clone, Debug)]
-pub struct ByteIter<R: std::io::Read>(R);
-
-/// Provides a method to pack a [`Byte`] stream to text.
-#[derive(Clone, Debug, Default)]
-pub struct BytePacker();
-
 impl std::fmt::Display for Byte {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:#04x}", &self.0)
@@ -41,6 +33,9 @@ impl std::fmt::Display for Byte {
 }
 
 impl Token for Byte {
+    type Tokenizer = ByteTokenizer;
+    type Packer = BytePacker;
+
     fn bit_count(&self) -> usize {
         8
     }
@@ -52,13 +47,20 @@ impl From<u8> for Byte {
     }
 }
 
-impl<'b, R: std::io::Read> TokenIter<R> for ByteIter<R> {
-    type T = Byte;
+pub struct ByteTokenizer;
 
-    fn unpack(r: R) -> Result<Self> {
-        Ok(Self(r))
+impl Tokenizer for ByteTokenizer {
+    type T = Byte;
+    type Iter<R: std::io::Read> = ByteIter<R>;
+
+    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
+        Ok(ByteIter(r))
     }
 }
+
+/// Provides a method to create a [`Byte`] stream from text.
+#[derive(Clone, Debug)]
+pub struct ByteIter<R: std::io::Read>(R);
 
 impl<R: std::io::Read> std::iter::Iterator for ByteIter<R> {
     type Item = Result<Byte>;
@@ -73,13 +75,14 @@ impl<R: std::io::Read> std::iter::Iterator for ByteIter<R> {
     }
 }
 
-impl<W: std::io::Write> TokenPacker<W> for BytePacker
-where
-    W: std::io::Write,
-{
+/// Provides a method to pack a [`Byte`] stream to text.
+#[derive(Clone, Debug, Default)]
+pub struct BytePacker;
+
+impl TokenPacker for BytePacker {
     type T = Byte;
 
-    fn pack<I>(i: I, w: &mut W) -> Result<()>
+    fn pack<I, W: std::io::Write>(i: I, w: &mut W) -> Result<()>
     where
         I: std::iter::Iterator<Item = Self::T>,
     {
@@ -109,7 +112,7 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = ByteIter::unpack(&mut r).unwrap();
+        let d = ByteTokenizer::tokenize(&mut r).unwrap();
         let i = d.map(|t| t.unwrap());
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
         BytePacker::pack(i, &mut wc).unwrap();

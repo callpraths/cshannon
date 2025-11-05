@@ -14,26 +14,23 @@
 
 extern crate cshannon;
 
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use cshannon::{Command, CompressArgs, DecompressArgs, EncodingScheme, TokenizationScheme};
 use env_logger::Env;
 
 #[derive(Parser)]
 #[command(version, about, long_about=None, author)]
 #[command(propagate_version = true)]
 struct Cli {
-    /// Toknizer to use. Must be one of `byte`, `grapheme`, `word`.
-    #[arg(short, long)]
-    tokenizer: String,
-    /// Encoding to use. Must be one of `balanced_tree`, `shannon`.
-    #[arg(short, long)]
-    encoding: String,
     /// Input file to (de)compress.
     #[arg(short, long)]
-    input_file: String,
+    input_file: PathBuf,
     /// Output file to (de)compress into.
     #[arg(short, long)]
-    output_file: String,
+    output_file: PathBuf,
 
     #[command(subcommand)]
     command: Commands,
@@ -42,17 +39,45 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Compress a file.
-    Compress,
+    Compress {
+        /// Toknizer to use.
+        #[arg(short, long)]
+        tokenization: TokenizationSchemeArg,
+        /// Encoding to use.
+        #[arg(short, long)]
+        encoding: EncodingSchemeArg,
+    },
     /// Decompress a file.
     Decompress,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum TokenizationSchemeArg {
+    Byte,
+    Word,
+    Grapheme,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum EncodingSchemeArg {
+    BalancedTree,
+    Fano,
+    Shannon,
+    Huffman,
 }
 
 fn main() -> Result<()> {
     env_logger::Builder::from_env(Env::default().default_filter_or("warn")).init();
     let cli = Cli::parse();
     let command = match &cli.command {
-        Commands::Compress => "compress",
-        Commands::Decompress => "decompress",
+        Commands::Compress {
+            encoding,
+            tokenization,
+        } => Command::Compress(CompressArgs {
+            encoding_scheme: to_encoding_scheme(&encoding),
+            tokenization_scheme: to_tokenization_scheme(tokenization),
+        }),
+        Commands::Decompress => Command::Decompress(DecompressArgs {}),
     };
 
     // Safe to use unwrap() because these args are `required`.
@@ -60,9 +85,25 @@ fn main() -> Result<()> {
         command,
         input_file: &cli.input_file,
         output_file: &cli.output_file,
-        tokenizer: &cli.tokenizer,
-        encoding: &cli.encoding,
     })?;
     println!("Success");
     Ok(())
+}
+
+// Migration kludge
+fn to_encoding_scheme(encoding: &EncodingSchemeArg) -> EncodingScheme {
+    match encoding {
+        EncodingSchemeArg::BalancedTree => EncodingScheme::BalancedTree,
+        EncodingSchemeArg::Fano => EncodingScheme::Fano,
+        EncodingSchemeArg::Shannon => EncodingScheme::Shannon,
+        EncodingSchemeArg::Huffman => EncodingScheme::Huffman,
+    }
+}
+
+fn to_tokenization_scheme(tokenization: &TokenizationSchemeArg) -> TokenizationScheme {
+    match tokenization {
+        TokenizationSchemeArg::Byte => TokenizationScheme::Byte,
+        TokenizationSchemeArg::Grapheme => TokenizationScheme::Grapheme,
+        TokenizationSchemeArg::Word => TokenizationScheme::Word,
+    }
 }

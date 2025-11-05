@@ -20,8 +20,9 @@
 //! [Unicode grapheme clusters]: http://www.unicode.org/reports/tr29/
 
 use super::string_parts;
-use crate::tokens::Token;
+use crate::tokens::{Token, Tokenizer};
 
+use anyhow::Result;
 use std::convert::{From, Into};
 use std::fmt;
 use std::hash::Hash;
@@ -29,12 +30,6 @@ use std::hash::Hash;
 /// A [`Token`] consisting of a Unicode grapheme cluster.
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Grapheme(String);
-
-/// Provides a method to create a [`Grapheme`] stream from text.
-pub type GraphemeIter = string_parts::StringPartsIter<Grapheme>;
-
-/// Provides a method to pack a [`Grapheme`] stream to text.
-pub type GraphemePacker = string_parts::StringPartsPacker<Grapheme>;
 
 impl From<String> for Grapheme {
     fn from(s: String) -> Self {
@@ -55,15 +50,35 @@ impl std::fmt::Display for Grapheme {
 }
 
 impl Token for Grapheme {
+    type Tokenizer = GraphemeTokenizer;
+    type Packer = GraphemePacker;
+
     fn bit_count(&self) -> usize {
         self.0.len() * 8
     }
 }
 
+pub struct GraphemeTokenizer;
+
+impl Tokenizer for GraphemeTokenizer {
+    type T = Grapheme;
+    type Iter<R: std::io::Read> = GraphemeIter;
+
+    fn tokenize<R: std::io::Read>(r: R) -> Result<Self::Iter<R>> {
+        GraphemeIter::new(r)
+    }
+}
+
+/// Provides a method to create a [`Grapheme`] stream from text.
+pub type GraphemeIter = string_parts::StringPartsIter<Grapheme>;
+
+/// Provides a method to pack a [`Grapheme`] stream to text.
+pub type GraphemePacker = string_parts::StringPartsPacker<Grapheme>;
+
 #[cfg(test)]
 mod tests {
-    use super::super::{TokenIter, TokenPacker};
     use super::*;
+    use crate::tokens::TokenPacker;
     use std::io::Cursor;
 
     const TEXT: &str = "
@@ -75,7 +90,7 @@ About my neck was hung.
     #[test]
     fn roundtrip() {
         let mut r = Cursor::new(TEXT);
-        let d = GraphemeIter::unpack(&mut r).unwrap();
+        let d = GraphemeTokenizer::tokenize(&mut r).unwrap();
         let i = d.map(|t| t.unwrap());
         let mut wc: Cursor<Vec<u8>> = Cursor::new(vec![]);
         GraphemePacker::pack(i, &mut wc).unwrap();
