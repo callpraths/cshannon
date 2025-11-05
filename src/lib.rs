@@ -103,10 +103,9 @@ use tokens::words::Word;
 use tokens::{Token, TokenPacker, Tokenizer};
 
 use anyhow::{anyhow, Result};
-use log::{info, trace};
+use log::info;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Seek;
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
@@ -130,43 +129,42 @@ pub struct Args<'a> {
 
 pub fn run(args: Args) -> Result<()> {
     match args.command {
-        Command::Compress(command_args) => match args.tokenization_scheme {
-            TokenizationScheme::Byte => compress::<Byte>(
-                args.input_file,
-                args.output_file,
-                command_args.encoding_scheme,
-                args.tokenization_scheme,
-            ),
-            TokenizationScheme::Grapheme => compress::<Grapheme>(
-                args.input_file,
-                args.output_file,
-                command_args.encoding_scheme,
-                args.tokenization_scheme,
-            ),
-            TokenizationScheme::Word => compress::<Word>(
-                args.input_file,
-                args.output_file,
-                command_args.encoding_scheme,
-                args.tokenization_scheme,
-            ),
-        },
-        Command::Decompress(_) => match args.tokenization_scheme {
-            TokenizationScheme::Byte => decompress::<Byte>(args.input_file, args.output_file),
-            TokenizationScheme::Grapheme => {
-                decompress::<Grapheme>(args.input_file, args.output_file)
-            }
-            TokenizationScheme::Word => decompress::<Word>(args.input_file, args.output_file),
-        },
+        Command::Compress(command_args) => compress(
+            args.input_file,
+            args.output_file,
+            command_args.encoding_scheme,
+            args.tokenization_scheme,
+        ),
+        Command::Decompress(_) => decompress(args.input_file, args.output_file),
     }
 }
 
 /// Document me.
 /// TODO: Convert to use AsRef<Path>
-pub fn compress<T: Token>(
+pub fn compress(
     input_file: &Path,
     output_file: &Path,
     encoding_scheme: EncodingScheme,
     tokenization_scheme: TokenizationScheme,
+) -> Result<()> {
+    info!("Compressing...");
+
+    let mut w = BufWriter::new(File::create(output_file)?);
+    pack_tokenization_scheme(tokenization_scheme, &mut w)?;
+
+    match tokenization_scheme {
+        TokenizationScheme::Byte => compress_with_token::<Byte, _>(input_file, w, encoding_scheme),
+        TokenizationScheme::Grapheme => {
+            compress_with_token::<Grapheme, _>(input_file, w, encoding_scheme)
+        }
+        TokenizationScheme::Word => compress_with_token::<Word, _>(input_file, w, encoding_scheme),
+    }
+}
+
+pub fn compress_with_token<T: Token, W: std::io::Write>(
+    input_file: &Path,
+    mut w: W,
+    encoding_scheme: EncodingScheme,
 ) -> Result<()> {
     info!("Compressing...");
     let r = BufReader::new(File::open(input_file)?);
@@ -177,31 +175,31 @@ pub fn compress<T: Token>(
     let tokens = T::Tokenizer::tokenize(r).unwrap().map(|r| r.unwrap());
     let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
 
-    let mut w = BufWriter::new(File::create(output_file)?);
-    pack_tokenization_scheme(tokenization_scheme, &mut w)?;
     encoding.pack(&mut w)?;
     crate::code::pack(code_text, &mut w)?;
     Ok(())
 }
 
-/// Document me.
-/// TODO: Convert to use AsRef<Path>
-pub fn decompress<T: Token>(input_file: &Path, output_file: &Path) -> Result<()> {
+pub fn decompress(input_file: &Path, output_file: &Path) -> Result<()> {
     info!("Decompressing...");
-    let mut r = File::open(input_file)?;
-    trace!("File position at the start: {:?}", r.stream_position());
-    let mut br = BufReader::new(r);
+    let w = BufWriter::new(File::create(output_file)?);
+    let mut r = BufReader::new(File::open(input_file)?);
+    match unpack_tokenization_scheme(&mut r)? {
+        TokenizationScheme::Byte => decompress_with_token::<Byte, _, _>(r, w),
+        TokenizationScheme::Grapheme => decompress_with_token::<Grapheme, _, _>(r, w),
+        TokenizationScheme::Word => decompress_with_token::<Word, _, _>(r, w),
+    }
+}
 
-    let _ = unpack_tokenization_scheme(&mut br)?;
-
-    let encoding: Encoding<T> = Encoding::unpack(&mut br).unwrap();
+fn decompress_with_token<T: Token, R: std::io::Read, W: std::io::Write>(
+    mut r: R,
+    mut w: W,
+) -> Result<()> {
+    let encoding: Encoding<T> = Encoding::unpack(&mut r).unwrap();
     let map = encoding.reverse_map();
-
-    let coded_text = crate::code::parse(&encoding.alphabet(), br)?.map(|r| r.unwrap());
-    let tokens = decode(&map, coded_text).map(|r| r.unwrap());
-
-    let mut w = BufWriter::new(File::create(output_file)?);
-    T::Packer::pack(tokens, &mut w)?;
+    let coded_text = crate::code::parse(&encoding.alphabet(), r)?.map(|r| r.unwrap());
+    let decoded_text = decode(&map, coded_text).map(|r| r.unwrap());
+    T::Packer::pack(decoded_text, &mut w)?;
     Ok(())
 }
 
