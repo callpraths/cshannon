@@ -88,10 +88,13 @@ pub mod model;
 pub mod tokens;
 
 mod encoding;
+mod tokenization_scheme;
 mod util;
 
 pub use crate::encoding::EncodingScheme;
 use crate::encoding::{new_encoder, Encoding};
+pub use crate::tokenization_scheme::TokenizationScheme;
+use crate::tokenization_scheme::{pack_tokenization_scheme, unpack_tokenization_scheme};
 
 use code::Letter;
 use tokens::bytes::Byte;
@@ -125,13 +128,6 @@ pub struct Args<'a> {
     pub tokenization_scheme: TokenizationScheme,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum TokenizationScheme {
-    Byte,
-    Grapheme,
-    Word,
-}
-
 pub fn run(args: Args) -> Result<()> {
     match args.command {
         Command::Compress(command_args) => match args.tokenization_scheme {
@@ -139,16 +135,19 @@ pub fn run(args: Args) -> Result<()> {
                 args.input_file,
                 args.output_file,
                 command_args.encoding_scheme,
+                args.tokenization_scheme,
             ),
             TokenizationScheme::Grapheme => compress::<Grapheme>(
                 args.input_file,
                 args.output_file,
                 command_args.encoding_scheme,
+                args.tokenization_scheme,
             ),
             TokenizationScheme::Word => compress::<Word>(
                 args.input_file,
                 args.output_file,
                 command_args.encoding_scheme,
+                args.tokenization_scheme,
             ),
         },
         Command::Decompress(_) => match args.tokenization_scheme {
@@ -167,6 +166,7 @@ pub fn compress<T: Token>(
     input_file: &Path,
     output_file: &Path,
     encoding_scheme: EncodingScheme,
+    tokenization_scheme: TokenizationScheme,
 ) -> Result<()> {
     info!("Compressing...");
     let r = BufReader::new(File::open(input_file)?);
@@ -178,6 +178,7 @@ pub fn compress<T: Token>(
     let code_text = encode(encoding.map(), tokens).map(|r| r.unwrap());
 
     let mut w = BufWriter::new(File::create(output_file)?);
+    pack_tokenization_scheme(tokenization_scheme, &mut w)?;
     encoding.pack(&mut w)?;
     crate::code::pack(code_text, &mut w)?;
     Ok(())
@@ -190,6 +191,8 @@ pub fn decompress<T: Token>(input_file: &Path, output_file: &Path) -> Result<()>
     let mut r = File::open(input_file)?;
     trace!("File position at the start: {:?}", r.stream_position());
     let mut br = BufReader::new(r);
+
+    let _ = unpack_tokenization_scheme(&mut br)?;
 
     let encoding: Encoding<T> = Encoding::unpack(&mut br).unwrap();
     let map = encoding.reverse_map();
