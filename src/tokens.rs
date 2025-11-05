@@ -53,6 +53,9 @@ pub mod words;
 ///
 /// Tokens may be used as keys in a [`HashMap`](std::collections::HashMap).
 pub trait Token: Clone + std::fmt::Debug + Display + Eq + std::hash::Hash {
+    type Tokenizer;
+    type Packer;
+
     // The number of bits of source text contained in this Token.
     fn bit_count(&self) -> usize;
 }

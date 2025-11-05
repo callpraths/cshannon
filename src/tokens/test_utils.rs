@@ -14,7 +14,10 @@
 
 //! Contains Token implementations intended to help write unit tests.
 
+use crate::tokens::{TokenIter, TokenPacker};
+
 use super::Token;
+use anyhow::Result;
 use std::fmt;
 
 /// A [`Token`] that wraps i32 values.
@@ -32,7 +35,51 @@ impl fmt::Display for I32Token {
 }
 
 impl Token for I32Token {
+    type Tokenizer = I32Tokenizer;
+    type Packer = I32TokenPacker;
+
     fn bit_count(&self) -> usize {
         4
+    }
+}
+
+pub struct I32Tokenizer;
+
+impl I32Tokenizer {
+    pub fn tokenize<R: std::io::Read>(r: R) -> Result<I32TokenIter<R>> {
+        I32TokenIter::unpack(r)
+    }
+}
+
+pub struct I32TokenIter<R: std::io::Read>(R);
+
+impl<'b, R: std::io::Read> TokenIter<R> for I32TokenIter<R> {
+    type T = I32Token;
+
+    fn unpack(r: R) -> Result<Self> {
+        Ok(Self(r))
+    }
+}
+
+impl<R: std::io::Read> std::iter::Iterator for I32TokenIter<R> {
+    type Item = Result<I32Token>;
+    fn next(&mut self) -> Option<Self::Item> {
+        panic!("Not implemented!");
+    }
+}
+
+pub struct I32TokenPacker;
+
+impl<W: std::io::Write> TokenPacker<W> for I32TokenPacker
+where
+    W: std::io::Write,
+{
+    type T = I32Token;
+
+    fn pack<I>(_i: I, _w: &mut W) -> Result<()>
+    where
+        I: std::iter::Iterator<Item = Self::T>,
+    {
+        panic!("Not implemented!")
     }
 }

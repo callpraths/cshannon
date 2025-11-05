@@ -20,8 +20,9 @@
 //! [Unicode grapheme clusters]: http://www.unicode.org/reports/tr29/
 
 use super::string_parts;
-use crate::tokens::Token;
+use crate::tokens::{Token, TokenIter};
 
+use anyhow::Result;
 use std::convert::{From, Into};
 use std::fmt;
 use std::hash::Hash;
@@ -29,6 +30,14 @@ use std::hash::Hash;
 /// A [`Token`] consisting of a Unicode grapheme cluster.
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Grapheme(String);
+
+pub struct GraphemeTokenizer;
+
+impl GraphemeTokenizer {
+    pub fn tokenize<R: std::io::Read>(r: R) -> Result<GraphemeIter> {
+        GraphemeIter::unpack(r)
+    }
+}
 
 /// Provides a method to create a [`Grapheme`] stream from text.
 pub type GraphemeIter = string_parts::StringPartsIter<Grapheme>;
@@ -55,6 +64,9 @@ impl std::fmt::Display for Grapheme {
 }
 
 impl Token for Grapheme {
+    type Tokenizer = GraphemeTokenizer;
+    type Packer = GraphemePacker;
+
     fn bit_count(&self) -> usize {
         self.0.len() * 8
     }

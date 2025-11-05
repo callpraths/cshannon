@@ -22,8 +22,9 @@
 //! [Unicode words]: http://www.unicode.org/reports/tr29/
 
 use super::string_parts;
-use crate::tokens::Token;
+use crate::tokens::{Token, TokenIter};
 
+use anyhow::Result;
 use std::convert::{From, Into};
 use std::fmt;
 use std::hash::Hash;
@@ -37,6 +38,14 @@ pub struct Word(String);
 
 /// Provides a method to create a [`Word`] stream from text.
 pub type WordIter = string_parts::StringPartsIter<Word>;
+
+pub struct WordTokenizer;
+
+impl WordTokenizer {
+    pub fn tokenize<R: std::io::Read>(r: R) -> Result<WordIter> {
+        WordIter::unpack(r)
+    }
+}
 
 /// Provides a method to pack a [`Word`] stream to text.
 pub type WordPacker = string_parts::StringPartsPacker<Word>;
@@ -60,6 +69,9 @@ impl std::fmt::Display for Word {
 }
 
 impl Token for Word {
+    type Tokenizer = WordTokenizer;
+    type Packer = WordPacker;
+
     fn bit_count(&self) -> usize {
         self.0.len() * 8
     }

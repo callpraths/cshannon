@@ -26,13 +26,17 @@ use std::hash::Hash;
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Byte(u8);
 
+pub struct ByteTokenizer;
+
+impl ByteTokenizer {
+    pub fn tokenize<R: std::io::Read>(r: R) -> Result<ByteIter<R>> {
+        ByteIter::unpack(r)
+    }
+}
+
 /// Provides a method to create a [`Byte`] stream from text.
 #[derive(Clone, Debug)]
 pub struct ByteIter<R: std::io::Read>(R);
-
-/// Provides a method to pack a [`Byte`] stream to text.
-#[derive(Clone, Debug, Default)]
-pub struct BytePacker();
 
 impl std::fmt::Display for Byte {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -41,6 +45,9 @@ impl std::fmt::Display for Byte {
 }
 
 impl Token for Byte {
+    type Tokenizer = ByteTokenizer;
+    type Packer = BytePacker;
+
     fn bit_count(&self) -> usize {
         8
     }
@@ -72,6 +79,10 @@ impl<R: std::io::Read> std::iter::Iterator for ByteIter<R> {
         }
     }
 }
+
+/// Provides a method to pack a [`Byte`] stream to text.
+#[derive(Clone, Debug, Default)]
+pub struct BytePacker();
 
 impl<W: std::io::Write> TokenPacker<W> for BytePacker
 where
