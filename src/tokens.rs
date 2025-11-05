@@ -120,7 +120,7 @@ where
     let mut buf = vec![0u8; safe_size];
     r.read_exact(&mut buf)?;
     trace!("read {} bytes to unpack into tokens", buf.len());
-    T::Tokenizer::tokenize(r).unwrap().collect()
+    T::Tokenizer::tokenize(Cursor::new(buf)).unwrap().collect()
 }
 
 // TODO: dedup with code::common::pack_u64()
