@@ -1,9 +1,30 @@
 use anyhow::{anyhow, Result};
 
+/// Source text needs to be split into tokens that are then compressed using one
+/// of the supported algorithms. This enum lists all the supported tokenization
+/// schemes.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum TokenizationScheme {
+    /// Split text byte-by-byte.
+    ///
+    /// This scheme makes no assumptions about the source text encoding.
     Byte,
+    /// Split text by unicode [graphemes].
+    ///
+    /// This schemes assumes that source text is utf-8 encoded.
+    ///
+    /// [graphemes]: https://en.wikipedia.org/wiki/Grapheme
     Grapheme,
+    /// Split text by unicode "words".
+    ///
+    /// This schemes assumes that source text is utf-8 encoded.
+    /// This tokenization scheme (and hence the compression output) is lossy
+    /// because punctuation etc. are lost after tokenization.
+    ///
+    /// [graphemes]: https://en.wikipedia.org/wiki/Grapheme
+    ///
+    /// WARNING: As of Nov 2025, this tokenization scheme is not yet implemented
+    ///          properly. It is synonymous to `Grapheme`
     Word,
 }
 

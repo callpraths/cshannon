@@ -45,11 +45,11 @@ fn roundtrip(text: &str, token: &str, encoding: &str) {
             input_file.to_str().unwrap(),
             "-o",
             compressed_file.to_str().unwrap(),
+            "compress",
             "-t",
             token,
             "-e",
             encoding,
-            "compress",
         ])
         .status()
         .is_ok());
@@ -59,10 +59,6 @@ fn roundtrip(text: &str, token: &str, encoding: &str) {
             compressed_file.to_str().unwrap(),
             "-o",
             decompressed_file.to_str().unwrap(),
-            "-t",
-            token,
-            "-e",
-            encoding,
             "decompress",
         ])
         .status()
@@ -73,17 +69,17 @@ fn roundtrip(text: &str, token: &str, encoding: &str) {
 
 #[test]
 fn bytes_balanced_tree() {
-    roundtrip(TEXT, "byte", "balanced_tree");
+    roundtrip(TEXT, "byte", "balanced-tree");
 }
 
 #[test]
 fn graphemes_balanced_tree() {
-    roundtrip(TEXT, "grapheme", "balanced_tree");
+    roundtrip(TEXT, "grapheme", "balanced-tree");
 }
 
 #[test]
 fn words_balanced_tree() {
-    roundtrip(TEXT_ONLY_WORDS, "word", "balanced_tree");
+    roundtrip(TEXT_ONLY_WORDS, "word", "balanced-tree");
 }
 
 #[test]
