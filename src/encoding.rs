@@ -33,24 +33,18 @@ pub mod fano;
 pub mod huffman;
 pub mod shannon;
 
-/// Encoding shcemes supported by this library.
+/// Encoding schems (i.e. the compression algorithms) supported by this library.
 pub enum EncodingScheme {
-    /// Create a new balanced tree [`Encoding`].
+    /// Create a new balanced tree encoding.
     ///
-    /// All letters in this encoding are fixed width bit strings. The smallest width
-    /// necessary to generate the required number of [`Letter`]s is used.
-    ///
-    /// The generated [`Encoding`] is stable: calling `new` on a [`Model`]
-    /// repeatedly yields the same [`Encoding`].
+    /// All letters in this encoding are fixed width bit strings. The smallest
+    /// width necessary to generate the required number of letters for all
+    /// input tokens is used.
     BalancedTree,
     /// Create a new [Fano encoding].
     ///
     /// [Fano encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
     Fano,
-    // Create a new [Huffman encoding].
-    //
-    // [Huffman encoding]: https://en.wikipedia.org/wiki/Huffman_coding
-    Huffman,
     /// Create a new [Shannon encoding].
     ///
     /// The Shannon encoding scheme is defined thus:
@@ -69,6 +63,14 @@ pub enum EncodingScheme {
     ///
     /// [Shannon encoding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
     Shannon,
+    /// Create a new [Huffman encoding].
+    ///
+    /// Of the algorithms implemented in this library, this is closest to practical
+    /// compression libraries used widely - e.g., deflate, jpeg and mp3 use a
+    /// Huffman-like encoding in their backends.
+    ///
+    /// [Huffman encoding]: https://en.wikipedia.org/wiki/Huffman_coding
+    Huffman,
 }
 
 pub fn new_encoder<T: Token>(

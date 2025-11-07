@@ -43,8 +43,10 @@ use std::fmt::Display;
 pub mod bytes;
 pub mod graphemes;
 mod string_parts;
-pub mod test_utils;
 pub mod words;
+
+#[cfg(test)]
+pub mod test_utils;
 
 /// A single item in the tokenized stream from a string input.
 ///
