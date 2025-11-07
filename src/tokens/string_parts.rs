@@ -85,7 +85,7 @@ where
 {
     type T = S;
 
-    fn pack<I, W: std::io::Write>(i: I, w: &mut W) -> Result<()>
+    fn pack<I, W: std::io::Write>(i: I, mut w: W) -> Result<()>
     where
         I: std::iter::Iterator<Item = Self::T>,
     {

@@ -74,11 +74,11 @@ impl Alphabet {
     /// Serialize the alphabet to a [`Write`er](std::io::Write).
     ///
     /// Can be deserialized back to an alphabet with [`Self::unpack()`].
-    pub fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()> {
+    pub fn pack<W: std::io::Write>(self, mut w: W) -> Result<()> {
         let letter_count = self.0.len();
         w.write_all(&pack_u64(letter_count as u64))?;
         for l in self.0.into_iter() {
-            l.pack(w)?;
+            l.pack(&mut w)?;
         }
         Ok(())
     }

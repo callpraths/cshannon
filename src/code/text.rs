@@ -22,7 +22,7 @@ use std::u64;
 /// Write a packed stream of [`Letter`]s.
 ///
 /// Returns the number of bytes written.
-pub fn pack<'a, I, W>(letters: I, w: &mut W) -> Result<usize>
+pub fn pack<'a, I, W>(letters: I, mut w: W) -> Result<usize>
 where
     I: Iterator<Item = &'a Letter>,
     W: std::io::Write,

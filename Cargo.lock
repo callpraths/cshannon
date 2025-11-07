@@ -257,6 +257,7 @@ dependencies = [
  "env_logger",
  "log",
  "owning_ref",
+ "serde",
  "tempfile",
  "test_bin",
  "unicode-segmentation",

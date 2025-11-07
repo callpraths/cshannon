@@ -70,7 +70,7 @@ pub trait Tokenizer {
 pub trait TokenPacker {
     type T: Token;
 
-    fn pack<I, W: std::io::Write>(i: I, w: &mut W) -> Result<()>
+    fn pack<I, W: std::io::Write>(i: I, w: W) -> Result<()>
     where
         I: std::iter::Iterator<Item = Self::T>;
 }

@@ -28,12 +28,17 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::io::Cursor;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 pub mod balanced_tree;
 pub mod fano;
 pub mod huffman;
 pub mod shannon;
 
 /// Encoding schems (i.e. the compression algorithms) supported by this library.
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum EncodingScheme {
     /// Create a new balanced tree encoding.
     ///
@@ -124,19 +129,19 @@ impl<T: Token> Encoding<T> {
         m
     }
 
-    pub fn pack<W: std::io::Write>(&self, w: &mut W) -> Result<()> {
+    pub fn pack<W: std::io::Write>(&self, mut w: W) -> Result<()> {
         let tokens = self.tokens();
         let size = tokens.iter().fold(0, |sum, t| sum + t.bit_count()) / 8;
         w.write_all(&pack_u64(size as u64))?;
-        T::Packer::pack(tokens.into_iter(), w)?;
+        T::Packer::pack(tokens.into_iter(), &mut w)?;
 
         self.alphabet().clone().pack(w)?;
 
         Ok(())
     }
 
-    pub fn unpack<R: std::io::Read>(r: &mut R) -> Result<Self> {
-        let size = unpack_u64(r)?;
+    pub fn unpack<R: std::io::Read>(mut r: R) -> Result<Self> {
+        let size = unpack_u64(&mut r)?;
         let safe_size = usize::try_from(size)?;
         let mut buf = vec![0u8; safe_size];
         r.read_exact(&mut buf)?;
@@ -195,7 +200,7 @@ fn pack_u64(s: u64) -> Vec<u8> {
 }
 
 // TODO: dedup with code::common::unpack_u64()
-fn unpack_u64<R: std::io::Read>(r: &mut R) -> Result<u64> {
+fn unpack_u64<R: std::io::Read>(mut r: R) -> Result<u64> {
     let mut buf: [u8; 8] = [0; 8];
     r.read_exact(&mut buf)?;
     Ok(u64::from_be_bytes(buf))
