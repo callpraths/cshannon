@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#![feature(test)]
 
 //! A library of some early compression algorithms based on replacement schemes.
 //!
@@ -282,86 +281,5 @@ mod internal {
             Some(t) => Ok((*t).clone()),
             None => Err(anyhow!("no encoding for letter {}", l)),
         })
-    }
-}
-
-mod benchmarks {
-    // Benchmarks don't get detected as uses correctly.
-    #![allow(dead_code)]
-    #![allow(unused_imports)]
-
-    extern crate test;
-
-    use super::*;
-    use crate::util::testing;
-    use anyhow::Result;
-    use std::fs;
-    use std::sync::Once;
-    use test::Bencher;
-
-    const TEXT: &str = "
-Ah! well a-day! what evil looks
-Had I from old and young!
-Instead of the cross, the Albatross
-About my neck was hung.
-";
-
-    #[bench]
-    fn bytes_balanced_tree(b: &mut Bencher) {
-        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
-    }
-
-    #[bench]
-    fn bytes_shannon(b: &mut Bencher) {
-        // TODO(FIXME): Should be EncodingScheme::Shannon
-        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
-    }
-
-    #[bench]
-    fn bytes_fano(b: &mut Bencher) {
-        // TODO(FIXME): Should be EncodingScheme::Fano
-        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
-    }
-
-    #[bench]
-    fn bytes_huffman(b: &mut Bencher) {
-        // TODO(FIXME): Should be EncodingScheme::Huffman
-        b.iter(|| roundtrip(TokenizationScheme::Byte, EncodingScheme::BalancedTree, TEXT));
-    }
-
-    fn roundtrip(
-        tokenization_scheme: TokenizationScheme,
-        encoding_scheme: EncodingScheme,
-        data: &str,
-    ) {
-        testing::init_logs_for_test();
-        let work_dir = tempfile::tempdir().unwrap();
-        let input_file = work_dir.path().join("input.txt");
-        let compressed_file = work_dir.path().join("compressed.txt");
-        let decompressed_file = work_dir.path().join("decompressed.txt");
-
-        fs::write(&input_file, data).unwrap();
-        print_error_and_bail(run(Args {
-            command: Command::Compress(CompressArgs {
-                tokenization_scheme,
-                encoding_scheme,
-            }),
-            input_file: &input_file.as_path(),
-            output_file: &compressed_file.as_path(),
-        }));
-        print_error_and_bail(run(Args {
-            command: Command::Decompress(DecompressArgs {}),
-            input_file: &compressed_file.as_path(),
-            output_file: &decompressed_file.as_path(),
-        }));
-        let decompressed = fs::read(&decompressed_file).unwrap();
-        assert_eq!(data.as_bytes(), &decompressed[..]);
-    }
-
-    fn print_error_and_bail<T>(r: Result<T>) {
-        if let Err(e) = r {
-            eprintln!("Backtrace: {}", e.backtrace());
-            panic!("Error: {}", e);
-        }
     }
 }
