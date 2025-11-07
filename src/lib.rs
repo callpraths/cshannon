@@ -14,9 +14,12 @@
 
 //! A library of some early compression algorithms based on replacement schemes.
 //!
-//! WARNING: This is a pet-project and does not intend to be a production-ready
-//! library for data compression (e.g. no attempt is made to maintain at-rest
-//! data format compatibility across library versions).
+//! > ⚠️ WARNING ⚠️
+//! >
+//! >
+//! > This is a pet-project and does not intend to be a production-ready
+//! > library for data compression (e.g. no attempt is made to maintain at-rest
+//! > data format compatibility across library versions).
 //!
 //! This library implements the standard [Huffman coding] scheme, two
 //! precursors to the Huffman scheme often called [Shannon-Fano coding], and
@@ -33,7 +36,7 @@
 //!
 //! Run `cshannon --help` to see the command-line options for the binary.
 //!
-//! The library exposes the same functionality via the `run` function:
+//! The library exposes the same functionality via the [`run`] function:
 //! ```
 //! use cshannon::{Args, Command, CompressArgs, EncodingScheme, TokenizationScheme, run};
 //! use std::path::Path;
@@ -71,6 +74,8 @@
 //! Decompression is conceptually simpler because there are no choices (of
 //! tokenizer and encoding). The encoding is included as a prefix in-band in the
 //! compressed data.
+//!
+//! [`run`]: ./fn.run.html
 
 // [internal documentation; not part of cargo docs]
 //
@@ -102,7 +107,12 @@ pub use crate::tokenization_scheme::TokenizationScheme;
 use anyhow::Result;
 use std::path::Path;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// The command to invoke via the `run` entry-point.
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Command {
     /// Compress the data using one of the implemented algorithms.
     Compress(CompressArgs),
@@ -115,6 +125,8 @@ pub enum Command {
 }
 
 /// Arguments specific to the compression operation.
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CompressArgs {
     /// Choose how to split the input data into tokens that are individually
     /// compressed using one of the supported algorithms.
@@ -124,15 +136,20 @@ pub struct CompressArgs {
 }
 
 /// Placeholder for (future) arguments specific to the decompression operation.
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DecompressArgs {}
 
 /// Arguments for the `run` entry-point of this library.
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Args<'a> {
     pub command: Command,
     /// File to read the input text from.
     ///
     /// Some tokenization schemes make assumptions about the encoding of the
-    /// source text. See documentation for `TokenizationScheme`.
+    /// source text. See documentation for [`TokenizationScheme`].
+    ///
+    /// [`TokenizationScheme`]: ./enum.TokenizationScheme.html
     pub input_file: &'a Path,
     /// File to write the output (de)compressed text to.
     ///
@@ -159,6 +176,13 @@ pub struct Args<'a> {
 ///
 /// See package documentation for an overview of the algorithms implemented in
 /// this library.
+///
+/// # Errors
+///
+/// Returns [`anyhow::Error`] for IO errors and errors in parsing the source file
+/// for tokenization schemes where utf-8 encoding is assumed.
+///
+/// [`anyhow::Error`]: https://docs.rs/anyhow/latest/anyhow/struct.Error.html
 pub fn run(args: Args) -> Result<()> {
     match args.command {
         Command::Compress(command_args) => internal::compress(
@@ -281,5 +305,24 @@ mod internal {
             Some(t) => Ok((*t).clone()),
             None => Err(anyhow!("no encoding for letter {}", l)),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Per API guidelines, our public types should be `Send`.
+    #[test]
+    fn test_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<Args>();
+    }
+
+    // Per API guidelines, our public types should be `Sync`.
+    #[test]
+    fn test_sync() {
+        fn assert_sync<T: Sync>() {}
+        assert_sync::<Args>();
     }
 }

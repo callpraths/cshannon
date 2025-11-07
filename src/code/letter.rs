@@ -155,7 +155,7 @@ pub trait Peephole {
     fn validate(&self) -> Result<()>;
     fn data<'a>(&'a self) -> &'a Vec<u8>;
     fn bit_count(&self) -> u64;
-    fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()>;
+    fn pack<W: std::io::Write>(self, w: W) -> Result<()>;
     fn unpack<R: std::io::Read>(r: R) -> Result<Self>
     where
         Self: Sized;
@@ -178,7 +178,7 @@ impl Peephole for Letter {
         self.bit_count
     }
 
-    fn pack<W: std::io::Write>(self, w: &mut W) -> Result<()> {
+    fn pack<W: std::io::Write>(self, mut w: W) -> Result<()> {
         trace!("pack: |{}|", &self);
         w.write_all(&pack_u64(self.bit_count))?;
         w.write_all(&self.data)?;

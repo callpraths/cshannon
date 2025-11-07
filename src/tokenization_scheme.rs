@@ -1,9 +1,13 @@
 use anyhow::{anyhow, Result};
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// Source text needs to be split into tokens that are then compressed using one
 /// of the supported algorithms. This enum lists all the supported tokenization
 /// schemes.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TokenizationScheme {
     /// Split text byte-by-byte.
     ///
@@ -21,16 +25,14 @@ pub enum TokenizationScheme {
     /// This tokenization scheme (and hence the compression output) is lossy
     /// because punctuation etc. are lost after tokenization.
     ///
-    /// [graphemes]: https://en.wikipedia.org/wiki/Grapheme
-    ///
-    /// WARNING: As of Nov 2025, this tokenization scheme is not yet implemented
-    ///          properly. It is synonymous to `Grapheme`
+    /// > ⚠️ As of Nov 2025, this tokenization scheme is not yet implemented
+    /// > properly. It is synonymous to `Grapheme`
     Word,
 }
 
 pub fn pack_tokenization_scheme<W: std::io::Write>(
     scheme: TokenizationScheme,
-    w: &mut W,
+    mut w: W,
 ) -> Result<()> {
     let marker = match scheme {
         TokenizationScheme::Byte => 1u8,
@@ -41,7 +43,7 @@ pub fn pack_tokenization_scheme<W: std::io::Write>(
     Ok(())
 }
 
-pub fn unpack_tokenization_scheme<R: std::io::Read>(r: &mut R) -> Result<TokenizationScheme> {
+pub fn unpack_tokenization_scheme<R: std::io::Read>(mut r: R) -> Result<TokenizationScheme> {
     let mut buf = [0u8];
     r.read_exact(&mut buf)?;
     let marker = buf[0];

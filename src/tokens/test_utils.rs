@@ -68,7 +68,7 @@ pub struct I32TokenPacker;
 impl TokenPacker for I32TokenPacker {
     type T = I32Token;
 
-    fn pack<I, W: std::io::Write>(_i: I, _w: &mut W) -> Result<()>
+    fn pack<I, W: std::io::Write>(_i: I, _w: W) -> Result<()>
     where
         I: std::iter::Iterator<Item = Self::T>,
     {
