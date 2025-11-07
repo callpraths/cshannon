@@ -250,7 +250,7 @@ mod pack_tests {
         let letters: Vec<Letter> = vec![];
         let mut got = Vec::new();
         assert_eq!(pack(letters.iter(), &mut got).unwrap(), 0);
-        assert_eq!(got, Vec::new());
+        assert_eq!(got, Vec::<u8>::new());
     }
 
     #[test]
@@ -258,7 +258,7 @@ mod pack_tests {
         let letters: Vec<Letter> = vec![Letter::from_bytes(&[])];
         let mut got = Vec::new();
         assert_eq!(pack(letters.iter(), &mut got).unwrap(), 0);
-        assert_eq!(got, Vec::new());
+        assert_eq!(got, Vec::<u8>::new());
     }
     #[test]
     fn single_byte() {
