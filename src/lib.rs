@@ -51,6 +51,14 @@
 //! });
 //! ```
 //!
+//! This library uses the logging facade from the [`log`] create.
+//! You must setup an appropriate logger in your binary's entry-point for the
+//! library to use. As an example, the primary command line binary in this
+//! package uses [`env_logger`] (see `src/bin/cli.rs`).
+//!
+//! [`log`]: https://docs.rs/log/latest/log/
+//! [`env_logger`]: https://docs.rs/env_logger/latest/env_logger/
+//!
 //! # Abstraction operation description
 //!
 //! The abstract steps in compression are as follows:
