@@ -1,6 +1,3 @@
-[![Build Status](https://travis-ci.com/callpraths/cshannon.svg?branch=master)](https://travis-ci.com/github/callpraths/cshannon)
-[![fuzzit](https://app.fuzzit.dev/badge?org_id=callpraths-gh)](https://app.fuzzit.dev/orgs/callpraths-gh/dashboard)
-
 # cshannon
 
     This is a pet project.
@@ -16,7 +13,7 @@ precursors to the Huffman scheme often called [Shannon-Fano coding].
 [Huffman coding]: https://en.wikipedia.org/wiki/Huffman_coding
 [Shannon-Fano coding]: https://en.wikipedia.org/wiki/Shannon%E2%80%93Fano_coding
 
-# Usage
+## Usage
 
 cshannon provides a binary that can be used for compression / decompression
 at the command line and a library that can be integrated into other projects.
