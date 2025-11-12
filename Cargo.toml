@@ -45,6 +45,10 @@ name = "cshannon"
 path = "src/bin/cli.rs"
 required-features = ["cli"]
 
+[[bin]]
+name = "minbin"
+path = "src/bin/minbin.rs"
+
 [dev-dependencies]
 clap = { version = "4.5.51", features = ["derive"] }
 criterion = "0.7.0"
