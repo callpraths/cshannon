@@ -14,7 +14,7 @@
 
 [package]
 name = "cshannon"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Prathmesh Prabhu <callpraths@gmail.com>"]
 edition = "2018"
 description = "An implementation of compression algorithms leading up to Huffman's encoding"

@@ -18,18 +18,21 @@ precursors to the Huffman scheme often called [Shannon-Fano coding].
 cshannon provides a binary that can be used for compression / decompression
 at the command line and a library that can be integrated into other projects.
 
-Run `cshannon --help` to see the command-line options for the binary.
+Build the binary target `cshannon` and run `cshannon --help` to see the
+command-line options for the binary.
 
 The easiest way to use cshannon library is:
 ```
-use cshannon::{Args, run};
+use cshannon::{Args, Command, CompressArgs, EncodingScheme, TokenizationScheme, run};
+use std::path::Path;
 
 run(Args{
-    command: "compress",
-    input_file: "/path/to/input_file",
-    output_file: "/path/to/output_file",
-    tokenizer: "byte",
-    encoding: "fano",
+    command: Command::Compress(CompressArgs{
+        tokenization_scheme: TokenizationScheme::Byte,
+        encoding_scheme: EncodingScheme::Fano
+    }),
+    input_file: &Path::new("/path/to/input_file"),
+    output_file: &Path::new("/path/to/output_file"),
 });
 ```
 
