@@ -25,17 +25,25 @@ license = "MIT OR Apache-2.0"
 keywords = ["compression", "decompression", "shannon", "fano", "pet-project"]
 categories = ["compression", "command-line-utilities", "algorithms"]
 
+[features]
+cli = ["clap", "env_logger"]
+
 [dependencies]
 anyhow = "1.0.100"
 bit-vec = "0.8.0"
-clap = { version = "4.5.51", features = ["derive"] }
-env_logger = "0.11.8"
+clap = { version = "4.5.51", features = ["derive"], optional = true }
+env_logger = { version = "0.11.8", optional = true }
 log = { version = "0.4.28", features = ["max_level_trace", "release_max_level_info"] }
 owning_ref = "0.4.1"
 serde = { version = "1.0.228", optional = true, features = ["derive"] }
 tempfile = "3.23.0"
 test_bin = "0.5.0"
 unicode-segmentation = "1.12.0"
+
+[[bin]]
+name = "cshannon"
+path = "src/bin/cli.rs"
+required-features = ["cli"]
 
 [dev-dependencies]
 criterion = "0.7.0"
