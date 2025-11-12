@@ -39,7 +39,7 @@ fn roundtrip(text: &str, token: &str, encoding: &str) {
     let decompressed_file = work_dir.path().join("decompressed.txt");
 
     fs::write(&input_file, text).unwrap();
-    assert!(test_bin::get_test_bin("cshannon")
+    assert!(test_bin::get_test_bin!("cshannon")
         .args(&[
             "-i",
             input_file.to_str().unwrap(),
@@ -53,7 +53,7 @@ fn roundtrip(text: &str, token: &str, encoding: &str) {
         ])
         .status()
         .is_ok());
-    assert!(test_bin::get_test_bin("cshannon")
+    assert!(test_bin::get_test_bin!("cshannon")
         .args(&[
             "-i",
             compressed_file.to_str().unwrap(),
